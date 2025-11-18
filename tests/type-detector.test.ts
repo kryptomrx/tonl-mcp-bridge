@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { detectType } from '../src/core/type-detector';
-
+import { detectType, detectObjectSchema } from '../src/core/type-detector';
 describe('Type Detector', () => {
   
   it('should detect string type', () => {
@@ -31,6 +30,20 @@ describe('Type Detector', () => {
   it('should detect object type', () => {
     const result = detectType({ id: 1 }); 
     expect(result).toBe("object");
+  });
+
+});
+
+describe('Object Schema Detector', () => {
+  
+  it('should detect schema of simple object', () => {
+    const obj = { id: 1, name: "Alice" };
+    const result = detectObjectSchema(obj);
+    
+    expect(result).toEqual({
+      id: "number",
+      name: "string"
+    });
   });
 
 });
