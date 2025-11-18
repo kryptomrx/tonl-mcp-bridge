@@ -62,7 +62,8 @@ describe('JSON to TONL Converter', () => {
       
       const expected = `users[2]{id:i32,name:str}:
   1, Alice
-  2, Bob`;
+  2, Bob
+`;
       
       expect(result).toBe(expected);
     });
