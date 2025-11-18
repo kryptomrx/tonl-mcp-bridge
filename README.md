@@ -2,9 +2,10 @@
 
 > Reduce MCP RAG query token usage by 45-60% with TONL format
 
-[![Tests](https://img.shields.io/badge/tests-19%20passing-brightgreen)]()
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)]()
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+![Tests](https://img.shields.io/badge/tests-19%20passing-brightgreen)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)
+![License](https://img.shields.io/badge/license-MIT-blue)
+
 
 ⚠️ **Status:** Work in Progress (Private Development)
 
