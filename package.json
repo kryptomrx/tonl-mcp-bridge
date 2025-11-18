@@ -1,48 +1,62 @@
 {
   "name": "tonl-mcp-bridge",
-  "version": "0.0.1",
-  "description": "Reduce MCP RAG query token usage by 45-60% with TONL format",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "version": "0.1.0",
+  "description": "Reduce LLM token costs by 40-60% with TONL format. Bidirectional JSON/YAML ↔ TONL converter with CLI.",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "type": "module",
   "bin": {
-    "tonl": "dist/cli/index.js"
+    "tonl": "./dist/cli/index.js"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "test": "vitest",
-    "lint": "eslint src/",
-    "format": "prettier --write src/"
+    "prepublishOnly": "npm run build && npm test",
+    "cli": "tsx src/cli/index.ts"
   },
   "keywords": [
     "tonl",
-    "mcp",
-    "rag",
     "token-optimization",
     "llm",
+    "ai",
+    "mcp",
+    "rag",
+    "json",
+    "yaml",
     "compression",
-    "ai"
+    "cli",
+    "typescript",
+    "data-format"
   ],
   "author": "kryptomrx",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/kryptomrx/tonl-mcp-bridge.git"
+    "url": "git+https://github.com/kryptomrx/tonl-mcp-bridge.git"
   },
   "bugs": {
     "url": "https://github.com/kryptomrx/tonl-mcp-bridge/issues"
   },
   "homepage": "https://github.com/kryptomrx/tonl-mcp-bridge#readme",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^0.5.0"
+    "@modelcontextprotocol/sdk": "^0.5.0",
+    "commander": "^14.0.2",
+    "js-yaml": "^4.1.1"
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
-    "typescript": "^5.3.0",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^20.19.25",
     "tsx": "^4.7.0",
-    "vitest": "^1.0.0",
-    "prettier": "^3.0.0",
-    "eslint": "^8.0.0"
+    "typescript": "^5.3.0",
+    "vitest": "^1.0.0"
   }
 }
