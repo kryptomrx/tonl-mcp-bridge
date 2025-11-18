@@ -1,0 +1,36 @@
+import { describe, it, expect } from 'vitest';
+import { detectType } from '../src/core/type-detector';
+
+describe('Type Detector', () => {
+  
+  it('should detect string type', () => {
+    const result = detectType("hello");
+    expect(result).toBe("string");
+  });
+
+  it('should detect number type', () => {
+    const result = detectType(1234);  
+    expect(result).toBe("number");
+  });
+
+  it('should detect boolean type', () => {
+    const result = detectType(true);  
+    expect(result).toBe("boolean");
+  });
+
+  it('should detect null type', () => {
+    const result = detectType(null);  
+    expect(result).toBe("null");      
+  });
+
+  it('should detect array type', () => {
+    const result = detectType([1, 2, 3]);  
+    expect(result).toBe("array");
+  });
+
+  it('should detect object type', () => {
+    const result = detectType({ id: 1 }); 
+    expect(result).toBe("object");
+  });
+
+});
