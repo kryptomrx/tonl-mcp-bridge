@@ -202,6 +202,7 @@ Tokens: ~50K tokens
 Cost: $1.50 per request
 Scale: 1M requests/day = $1.5M/day 💰
 Savings: $2.25M/day = $67.5M/month! 🤯
+```
 
 ## Contributing
 
