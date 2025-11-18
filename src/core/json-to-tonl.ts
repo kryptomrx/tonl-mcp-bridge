@@ -116,5 +116,5 @@ export function jsonToTonl(
   });
   
   // 4. Combine header + rows
-  return `${header}:\n${rows.join('\n')}`;
+  return `${header}:\n${rows.join('\n')}\n`;
 }
