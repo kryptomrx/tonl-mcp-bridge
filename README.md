@@ -141,16 +141,43 @@ npx tsx demo.ts
 
 - [x] Phase 1: Core Utils
   - [x] Token counter
-  - [x] Type detector
+  - [x] Type detector  
   - [x] JSON → TONL converter
-- [ ] Phase 2: Advanced Features
+  
+- [ ] Phase 2: Bidirectional
   - [ ] TONL → JSON parser
   - [ ] CLI tool
-  - [ ] MCP integration
-- [ ] Phase 3: Extensions
+  
+- [ ] Phase 3: Developer Tools
+  - [ ] MCP Server integration
   - [ ] YAML support
-  - [ ] Batch conversion
   - [ ] VS Code extension
+  
+- [ ] Phase 4: Production Infrastructure 🚀
+  - [ ] **Vector DB Proxy Layer**
+    - Drop-in replacement for Weaviate/Pinecone/Milvus clients
+    - Automatic JSON → TONL conversion
+    - Transparent to application code
+  - [ ] **MCP Bridge Server**
+    - Protocol-level TONL conversion
+    - Works with any MCP-compatible LLM
+    - Zero code changes required
+  - [ ] **Serverless Functions**
+    - AWS Lambda integration
+    - Cloudflare Workers support
+    - Edge deployment ready
+  - [ ] **Database Drivers**
+    - Custom drivers with built-in TONL support
+    - Compatible with existing ORMs
+    - Connection pooling & caching
+  
+  **Use Case:** Scale to millions of queries/day with 60% token savings
+  
+- [ ] Phase 5: Enterprise Features
+  - [ ] Batch processing pipelines
+  - [ ] Real-time streaming conversion
+  - [ ] Multi-DB federation
+  - [ ] Monitoring & analytics dashboard
 
 ## Contributing
 
