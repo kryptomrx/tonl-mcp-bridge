@@ -2,7 +2,7 @@
 
 /**
  * TONL CLI Tool
- * Convert between JSON and TONL formats
+ * Convert between JSON, YAML, and TONL formats
  */
 
 import { Command } from 'commander';
@@ -10,17 +10,19 @@ import { readFileSync, writeFileSync } from 'fs';
 import { jsonToTonl } from '../core/json-to-tonl.js';
 import { tonlToJson } from '../core/tonl-to-json.js';
 import { estimateTokens, calculateSavings } from '../utils/token-counter.js';
+import { yamlToTonl } from '../core/yaml-to-tonl.js';
+import { tonlToYaml } from '../core/tonl-to-yaml.js';
 
 const program = new Command();
 
 program
   .name('tonl')
-  .description('Convert between JSON and TONL formats for token optimization')
+  .description('Convert between JSON, YAML, and TONL formats for token optimization')
   .version('0.1.0');
 
 program
   .command('convert')
-  .description('Convert file between JSON and TONL formats')
+  .description('Convert file between JSON, YAML, and TONL formats')
   .argument('<input>', 'Input file path')
   .argument('[output]', 'Output file path (optional, auto-generated if not provided)')
   .option('-s, --stats', 'Show token savings statistics')
@@ -33,9 +35,10 @@ program
       // Detect format based on file extension
       const isJsonInput = input.endsWith('.json');
       const isTonlInput = input.endsWith('.tonl');
-      
-      if (!isJsonInput && !isTonlInput) {
-        console.error('❌ Error: Input file must be .json or .tonl');
+      const isYamlInput = input.endsWith('.yaml') || input.endsWith('.yml');
+
+      if (!isJsonInput && !isTonlInput && !isYamlInput) {
+        console.error('❌ Error: Input file must be .json, .yaml, .yml, or .tonl');
         process.exit(1);
       }
       
@@ -56,13 +59,29 @@ program
         outputPath = output || input.replace('.json', '.tonl');
         
         console.log('📄 Converting JSON → TONL...');
-      } else {
-        // TONL → JSON
-        const jsonData = tonlToJson(inputContent);
-        outputContent = JSON.stringify(jsonData, null, 2) + '\n';
-        outputPath = output || input.replace('.tonl', '.json');
+      } else if (isYamlInput) {
+        // YAML → TONL
+        const collectionName = options.name || 'data';
+        outputContent = yamlToTonl(inputContent, collectionName);
+        outputPath = output || input.replace(/\.ya?ml$/, '.tonl');
         
-        console.log('📄 Converting TONL → JSON...');
+        console.log('📄 Converting YAML → TONL...');
+      } else {
+        // TONL → JSON or YAML
+        const jsonData = tonlToJson(inputContent);
+        
+        // Determine output format from output filename
+        const wantsYaml = output && (output.endsWith('.yaml') || output.endsWith('.yml'));
+        
+        if (wantsYaml) {
+          outputContent = tonlToYaml(inputContent);
+          outputPath = output;
+          console.log('📄 Converting TONL → YAML...');
+        } else {
+          outputContent = JSON.stringify(jsonData, null, 2) + '\n';
+          outputPath = output || input.replace('.tonl', '.json');
+          console.log('📄 Converting TONL → JSON...');
+        }
       }
       
       // Write output file
@@ -79,7 +98,7 @@ program
         console.log(`   Input:  ${inputTokens} tokens`);
         console.log(`   Output: ${outputTokens} tokens`);
         
-        if (isJsonInput) {
+        if (isJsonInput || isYamlInput) {
           const savings = calculateSavings(inputContent, outputContent);
           console.log(`   Saved:  ${savings.savedTokens} tokens (${savings.savingsPercent}%)`);
         }
