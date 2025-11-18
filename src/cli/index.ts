@@ -7,9 +7,9 @@
 
 import { Command } from 'commander';
 import { readFileSync, writeFileSync } from 'fs';
-import { jsonToTonl } from '../core/json-to-tonl';
-import { tonlToJson } from '../core/tonl-to-json';
-import { estimateTokens, calculateSavings } from '../utils/token-counter';
+import { jsonToTonl } from '../core/json-to-tonl.js';
+import { tonlToJson } from '../core/tonl-to-json.js';
+import { estimateTokens, calculateSavings } from '../utils/token-counter.js';
 
 const program = new Command();
 

@@ -3,7 +3,7 @@
  * Converts JSON arrays to TONL format for token optimization
  */
 
-import { detectObjectSchema, TypeName } from './type-detector';
+import { detectObjectSchema, TypeName } from './type-detector.js';
 
 /**
  * Map TypeScript/JS types to TONL type names
