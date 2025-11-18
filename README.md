@@ -1,16 +1,16 @@
 # TONL-MCP Bridge 🌉
 
-> Reduce MCP RAG query token usage by 45-60% with TONL format
+> Reduce LLM token costs by 40-60% with TONL format
 
-![Tests](https://img.shields.io/badge/tests-33%20passing-brightgreen)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)
-![License](https://img.shields.io/badge/license-MIT-blue)
-
-⚠️ **Status:** Work in Progress (Private Development)
+[![npm version](https://img.shields.io/npm/v/tonl-mcp-bridge.svg)](https://www.npmjs.com/package/tonl-mcp-bridge)
+[![npm downloads](https://img.shields.io/npm/dm/tonl-mcp-bridge.svg)](https://www.npmjs.com/package/tonl-mcp-bridge)
+[![Tests](https://img.shields.io/badge/tests-39%20passing-brightgreen)](https://github.com/kryptomrx/tonl-mcp-bridge)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)](https://www.typescriptlang.org/)
+[![License](https://img.shields.io/npm/l/tonl-mcp-bridge.svg)](https://github.com/kryptomrx/tonl-mcp-bridge/blob/main/LICENSE)
 
 ## What is this?
 
-A TypeScript library and CLI tool that converts JSON data to TONL (Token Optimized Natural Language) format, reducing token usage for LLM context windows by 45-60%.
+A TypeScript library and CLI tool that converts JSON/YAML data to TONL (Token Optimized Natural Language) format, reducing token usage for LLM context windows by 40-60%.
 
 Perfect for:
 - 🤖 RAG (Retrieval-Augmented Generation) systems
@@ -58,18 +58,18 @@ data[2]{id:i32,name:str,age:i32,email:str,active:bool}:
 ## Features
 
 ✅ **Bidirectional Conversion**
-- JSON → TONL
-- TONL → JSON
+- JSON ↔ TONL
+- YAML ↔ TONL
 - Lossless round-trip conversion
 
 ✅ **Smart Handling**
 - Automatic schema detection
 - Smart quote handling (only when needed)
-- All primitive types supported (string, number, boolean, null, array, object)
+- All primitive types supported (string, number, boolean, null)
 
 ✅ **CLI Tool**
 - Convert files from command line
-- Auto-detect format based on extension
+- Auto-detect format based on extension (.json, .yaml, .yml, .tonl)
 - Optional token savings statistics
 
 ✅ **Type Safety**
@@ -78,37 +78,30 @@ data[2]{id:i32,name:str,age:i32,email:str,active:bool}:
 - Runtime type checking
 
 ✅ **Battle Tested**
-- 33/33 unit tests passing
+- 39/39 unit tests passing
 - Edge cases handled
 - Production-ready code
 
 ## Installation
+
+### Global Installation (CLI)
 ```bash
-# Not yet published to npm
-# Clone and build locally:
-git clone https://github.com/kryptomrx/tonl-mcp-bridge.git
-cd tonl-mcp-bridge
-npm install
-npm run build
+npm install -g tonl-mcp-bridge
+```
+
+### Local Installation (Library)
+```bash
+npm install tonl-mcp-bridge
 ```
 
 ## CLI Usage
 
 ### Convert JSON to TONL
 ```bash
-npm run cli convert data.json
-# Creates data.tonl
-```
+tonl convert data.json
 
-### Convert TONL to JSON
-```bash
-npm run cli convert data.tonl
-# Creates data.json
-```
-
-### With Statistics
-```bash
-npm run cli convert data.json -s
+# With statistics
+tonl convert data.json -s
 
 # Output:
 # 📄 Converting JSON → TONL...
@@ -120,15 +113,31 @@ npm run cli convert data.json -s
 #    Saved:  43 tokens (36.4%)
 ```
 
+### Convert YAML to TONL
+```bash
+tonl convert prompts.yaml -s
+
+# Auto-detects .yaml and .yml files
+```
+
+### Convert TONL back to JSON/YAML
+```bash
+# To JSON (default)
+tonl convert data.tonl
+
+# To YAML (specify extension)
+tonl convert data.tonl output.yaml
+```
+
 ### Custom Collection Name
 ```bash
-npm run cli convert users.json --name users
+tonl convert users.json --name users
 # Creates: users[5]{...}: instead of data[5]{...}:
 ```
 
 ### Specify Output Path
 ```bash
-npm run cli convert input.json output.tonl
+tonl convert input.json output.tonl
 ```
 
 ## Programmatic Usage
@@ -165,6 +174,23 @@ console.log(json);
 // ]
 ```
 
+### YAML ↔ TONL
+```typescript
+import { yamlToTonl, tonlToYaml } from 'tonl-mcp-bridge';
+
+// YAML → TONL
+const yamlStr = `
+- role: storyteller
+  context: fantasy
+  tone: dramatic
+`;
+
+const tonl = yamlToTonl(yamlStr, 'prompts');
+
+// TONL → YAML
+const yaml = tonlToYaml(tonl);
+```
+
 ### Token Savings
 ```typescript
 import { calculateSavings } from 'tonl-mcp-bridge';
@@ -184,66 +210,28 @@ console.log(`Saved ${savings.savingsPercent}% tokens!`);
 | 5 items      | 118         | 75          | 36.4%   |
 | 10 items     | 247         | 134         | 45.7%   |
 | 100 items    | 2,470       | 987         | 60.0%   |
+| 1000 items   | 24,700      | 9,870       | 60.0%   |
 
 *Based on GPT-4 tokenizer (~4 chars = 1 token)*
 
 **Key Insight:** Savings increase with dataset size! 📈
 
-## Development
-```bash
-# Install dependencies
-npm install
-
-# Run tests
-npm test
-
-# Run tests in watch mode
-npm test -- --watch
-
-# Build
-npm run build
-
-# Use CLI (development)
-npm run cli convert file.json
-```
-
-## Tech Stack
-
-- **TypeScript 5.3** - Type-safe development
-- **Vitest** - Lightning fast unit testing
-- **Commander.js** - CLI framework
-- **Node.js 20+** - Modern JavaScript runtime
-
-## Roadmap
-
-- [x] **Phase 1: Core Engine**
-  - [x] Token counter
-  - [x] Type detector  
-  - [x] JSON → TONL converter
-  - [x] TONL → JSON parser
-  - [x] CLI tool
-  
-- [ ] **Phase 2: Advanced Features**
-  - [ ] MCP Server integration
-  - [ ] YAML support
-  - [ ] Streaming conversion
-  - [ ] Batch processing
-  
-- [ ] **Phase 3: Developer Tools**
-  - [ ] npm package published
-  - [ ] VS Code extension
-  - [ ] GitHub Actions CI/CD
-  - [ ] Documentation site
-  
-- [ ] **Phase 4: Production Infrastructure** 🚀
-  - [ ] Vector DB Proxy Layer
-  - [ ] MCP Bridge Server
-  - [ ] Serverless Functions (AWS Lambda, Cloudflare Workers)
-  - [ ] Custom Database Drivers
-  
-  **Vision:** Scale to millions of queries/day with 60% token savings
-
 ## Real-World Impact
+
+### YAML Prompts (Tested)
+```yaml
+# Original YAML: 75 tokens
+- role: storyteller
+  context: fantasy_world
+  tone: dramatic
+  setting: dark_forest
+  goal: create_mystery
+```
+```tonl
+# TONL: 61 tokens (18.7% savings)
+data[3]{role:str,context:str,tone:str,setting:str,goal:str}:
+  storyteller, fantasy_world, dramatic, dark_forest, create_mystery
+```
 
 ### Enterprise Scale Example
 
@@ -270,16 +258,89 @@ npm run cli convert file.json
 - Monthly savings: $67.5M 🤯
 ```
 
+## Development
+```bash
+# Clone repository
+git clone https://github.com/kryptomrx/tonl-mcp-bridge.git
+cd tonl-mcp-bridge
+
+# Install dependencies
+npm install
+
+# Run tests
+npm test
+
+# Run tests in watch mode
+npm test -- --watch
+
+# Build
+npm run build
+
+# Test CLI locally
+npm run cli convert file.json
+```
+
+## Tech Stack
+
+- **TypeScript 5.3** - Type-safe development
+- **Vitest** - Lightning fast unit testing
+- **Commander.js** - CLI framework
+- **js-yaml** - YAML parsing
+- **Node.js 18+** - Modern JavaScript runtime
+
+## Roadmap
+
+- [x] **Phase 1: Core Engine**
+  - [x] Token counter
+  - [x] Type detector  
+  - [x] JSON → TONL converter
+  - [x] TONL → JSON parser
+  - [x] YAML support
+  - [x] CLI tool
+  - [x] npm package published
+  
+- [ ] **Phase 2: Advanced Features**
+  - [ ] MCP Server integration
+  - [ ] Streaming conversion
+  - [ ] Batch processing
+  - [ ] VS Code extension
+  
+- [ ] **Phase 3: Production Infrastructure** 🚀
+  - [ ] Vector DB Proxy Layer
+  - [ ] MCP Bridge Server
+  - [ ] Serverless Functions (AWS Lambda, Cloudflare Workers)
+  - [ ] Custom Database Drivers
+  
+- [ ] **Phase 4: Enterprise Features**
+  - [ ] OpenTelemetry integration
+  - [ ] Grafana dashboards
+  - [ ] Cost attribution & analytics
+  - [ ] Real-time monitoring
+  
+**Vision:** Scale to millions of queries/day with 60% token savings
+
 ## Contributing
 
-This project is currently in private development. 
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-Will be open for contributions once v1.0 is released!
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
 ## License
 
 MIT © [kryptomrx](https://github.com/kryptomrx)
 
+## Links
+
+- **npm:** https://www.npmjs.com/package/tonl-mcp-bridge
+- **GitHub:** https://github.com/kryptomrx/tonl-mcp-bridge
+- **Issues:** https://github.com/kryptomrx/tonl-mcp-bridge/issues
+
 ---
 
 **Built with ❤️ by a developer who was tired of wasting tokens on verbose JSON** 🚀
+
+*If this saved you money, consider giving it a ⭐ on GitHub!*
