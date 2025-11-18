@@ -6,7 +6,7 @@
   "types": "./dist/index.d.ts",
   "type": "module",
   "bin": {
-    "tonl": "./dist/cli/index.js"
+    "tonl": "dist/cli/index.js"
   },
   "files": [
     "dist",
