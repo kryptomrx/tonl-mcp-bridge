@@ -1,6 +1,6 @@
 {
   "name": "tonl-mcp-bridge",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Reduce LLM token costs by 40-60% with TONL format. Bidirectional JSON/YAML ↔ TONL converter with CLI.",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
