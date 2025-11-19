@@ -9,7 +9,7 @@
 
 ## What is this?
 
-A TypeScript library and CLI tool that converts JSON/YAML data to TONL (Token Optimized Natural Language) format, reducing token usage for LLM context windows.
+A TypeScript library and CLI tool that converts JSON/YAML data to TONL (Token Optimized Natural Language) format, reducing token usage for modern LLMs (GPT-5, Claude 4, Gemini 2.5).
 
 **Perfect for:**
 - 🤖 RAG systems with structured data
@@ -37,7 +37,7 @@ When sending structured data to LLMs, JSON is verbose:
 ]
 ```
 
-**56 tokens** (GPT-4 tokenizer) 💸
+**56 tokens** (GPT-5 tokenizer) 💸
 
 ## The Solution
 
@@ -66,9 +66,9 @@ data[2]{id:i8,name:str,age:i8,active:bool}:
 - Automatic type detection and smallest type selection
 
 ✅ **Real Token Counting**
-- Integrated GPT-4 tokenizer (js-tiktoken)
+- Integrated tokenizer with 2025 AI models (js-tiktoken)
 - Accurate token statistics (not estimation!)
-- Support for GPT-4, GPT-3.5-turbo, Claude models
+- Support for GPT-5, Claude 4, Gemini 2.5, and more
 
 ✅ **Production Ready**
 - 44/44 unit tests passing
@@ -105,7 +105,7 @@ tonl convert data.json -s
 ✅ Converted successfully!
 📁 Output: data.tonl
 
-📊 Token Statistics (GPT-4 Tokenizer):
+📊 Token Statistics (GPT 5 Tokenizer):
    Input:  56 tokens
    Output: 37 tokens
    Saved:  19 tokens (33.9%)
@@ -174,7 +174,7 @@ import { calculateRealSavings } from 'tonl-mcp-bridge';
 const jsonStr = JSON.stringify(data);
 const tonlStr = jsonToTonl(data);
 
-const savings = calculateRealSavings(jsonStr, tonlStr, 'gpt-4');
+const savings = calculateRealSavings(jsonStr, tonlStr, 'gpt-5');
 
 console.log(`Original: ${savings.originalTokens} tokens`);
 console.log(`TONL: ${savings.compressedTokens} tokens`);
@@ -214,7 +214,7 @@ const yaml = tonlToYaml(tonl);
 - **Highly nested data** (loses structure)
 - **Varied schemas** (different keys per object)
 
-### Real Benchmarks (GPT-4 Tokenizer)
+### Real Benchmarks (GPT-5 Tokenizer)
 
 | Items | JSON Tokens | TONL Tokens | Savings |
 |-------|-------------|-------------|---------|
@@ -297,23 +297,26 @@ node dist/cli/index.js convert test.json -s
 
 ## Roadmap
 
-### ✅ v0.2.0 (Current)
+### ✅ v0.2.1 (Current)
+- [x] Support for 2025 AI models (GPT-5, Claude 4, Gemini 2.5)
+- [x] Dynamic model display in CLI
 - [x] Extended type system (i8-i64, f32-f64, date, datetime)
-- [x] Real GPT-4 tokenizer integration
+- [x] Real tokenizer integration (GPT-5, Claude, Gemini)
 - [x] Schema validation across all objects
 - [x] Lossless round-trip conversion
-- [x] 44/44 tests passing
+- [x] 45/45 tests passing
 
 ### 🚧 v0.3.0 (Next)
-- [ ] Streaming API for large files
+- [ ] `--model` flag (choose GPT-5, Claude 4, Gemini, etc.)
 - [ ] `--validate` flag for schema checking
-- [ ] `--model` flag (gpt-4, claude, etc.)
+- [ ] Streaming API for large files
 - [ ] Performance benchmarks vs alternatives
 
 ### 🎯 v0.5.0 (Future)
-- [ ] MCP Server implementation
+- [ ] MCP Server implementation (auto-TONL gateway!)
 - [ ] Batch processing
 - [ ] Progress bars for large conversions
+- [ ] OpenWebUI integration
 
 ### 💎 v1.0.0 (Production)
 - [ ] Full test coverage
@@ -325,7 +328,7 @@ node dist/cli/index.js convert test.json -s
 
 - **TypeScript 5.3** - Type safety
 - **Vitest** - Fast testing
-- **js-tiktoken** - Real GPT-4 tokenizer
+- **js-tiktoken** - Real tokenizer for GPT-5, Claude, Gemini
 - **Commander.js** - CLI framework
 - **js-yaml** - YAML parsing
 - **Node.js 18+** - Modern runtime

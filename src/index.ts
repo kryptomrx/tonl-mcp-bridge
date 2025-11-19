@@ -34,6 +34,11 @@ export {
   estimateTokens, 
   calculateSavings 
 } from './utils/token-counter.js';
-
+// Re-export tokenizer utilities and types
+export { 
+  countTokens, 
+  calculateRealSavings,
+  type ModelName 
+} from './utils/tokenizer.js';
 // Types
 export type { TypeName } from './core/type-detector.js';
