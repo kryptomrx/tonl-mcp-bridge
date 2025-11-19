@@ -1,19 +1,31 @@
 /**
- * JSON to TONL Converter
- * Converts JSON arrays to TONL format for token optimization
+ * Enhanced JSON to TONL Converter
+ * Now with extended type support and proper validation
  */
 
-import { detectObjectSchema, TypeName } from './type-detector.js';
+import { validateAndMergeSchemas, TypeName } from './type-detector.js';
+import { TonlValidationError, TonlSchemaError } from '../utils/errors.js';
 
 /**
  * Map TypeScript/JS types to TONL type names
  */
 export function typeNameToTonl(type: TypeName): string {
   const typeMap: Record<TypeName, string> = {
+    // Primitives
     string: 'str',
-    number: 'i32',
     boolean: 'bool',
     null: 'null',
+    // Integers
+    int8: 'i8',
+    int16: 'i16',
+    int32: 'i32',
+    int64: 'i64',
+    // Floats
+    float32: 'f32',
+    float64: 'f64',
+    // Special
+    date: 'date',
+    datetime: 'datetime',
     array: 'arr',
     object: 'obj'
   };
@@ -23,27 +35,29 @@ export function typeNameToTonl(type: TypeName): string {
 
 /**
  * Build TONL header from schema
- * 
- * @example
- * buildHeader("users", 2, { id: "number", name: "string" })
- * // Returns: "users[2]{id:i32,name:str}"
  */
 export function buildTonlHeader(
   name: string,
   count: number,
   schema: Record<string, TypeName>
 ): string {
-  // Build schema part: {id:i32,name:str,age:i32}
+  // Validate name
+  if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
+    throw new TonlValidationError(
+      `Invalid collection name: "${name}". Must start with letter/underscore and contain only alphanumeric characters.`
+    );
+  }
+  
+  // Build schema part
   const schemaEntries = Object.entries(schema)
     .map(([key, type]) => `${key}:${typeNameToTonl(type)}`)
     .join(',');
   
-  // Combine: name[count]{schema}
   return `${name}[${count}]{${schemaEntries}}`;
 }
 
 /**
- * Format a value for TONL output
+ * Enhanced value formatting with proper escaping
  */
 export function formatValue(value: unknown): string {
   if (value === null) {
@@ -51,11 +65,19 @@ export function formatValue(value: unknown): string {
   }
   
   if (typeof value === 'string') {
-    // If string contains comma or space, wrap in quotes
-    if (value.includes(',') || value.includes(' ')) {
-      return `"${value}"`;
+    // Escape special characters
+    const escaped = value
+      .replace(/\\/g, '\\\\')  // Backslash
+      .replace(/"/g, '\\"')     // Quote
+      .replace(/\n/g, '\\n')    // Newline
+      .replace(/\r/g, '\\r')    // Carriage return
+      .replace(/\t/g, '\\t');   // Tab
+    
+    // Quote if contains comma, space, or special chars
+    if (escaped.includes(',') || escaped.includes(' ') || escaped !== value) {
+      return `"${escaped}"`;
     }
-    return value;
+    return escaped;
   }
   
   if (typeof value === 'boolean') {
@@ -67,7 +89,7 @@ export function formatValue(value: unknown): string {
   }
   
   if (Array.isArray(value)) {
-    return `[${value.join(',')}]`;
+    return `[${value.map(v => formatValue(v)).join(',')}]`;
   }
   
   // Object: JSON stringify as fallback
@@ -75,46 +97,71 @@ export function formatValue(value: unknown): string {
 }
 
 /**
- * Convert JSON array to TONL format
- * 
- * @param data - Array of objects to convert
- * @param name - Name for the data collection (default: "data")
- * @returns TONL formatted string
- * 
- * @example
- * const users = [
- *   { id: 1, name: "Alice" },
- *   { id: 2, name: "Bob" }
- * ];
- * 
- * jsonToTonl(users, "users")
- * // Returns:
- * // users[2]{id:i32,name:str}:
- * //   1, Alice
- * //   2, Bob
+ * Enhanced JSON to TONL conversion with validation
  */
 export function jsonToTonl(
   data: Record<string, unknown>[],
   name: string = 'data'
 ): string {
+  // Validate input
+  if (!Array.isArray(data)) {
+    throw new TonlValidationError(
+      'Input must be an array of objects',
+      { received: typeof data }
+    );
+  }
+  
   // Handle empty array
   if (data.length === 0) {
     return `${name}[0]{}:\n`;
   }
   
-  // 1. Detect schema from first object
-  const schema = detectObjectSchema(data[0]);
+  // Validate all items are objects
+  const nonObjects = data.filter(item => 
+    typeof item !== 'object' || item === null || Array.isArray(item)
+  );
   
-  // 2. Build header
-  const header = buildTonlHeader(name, data.length, schema);
+  if (nonObjects.length > 0) {
+    throw new TonlValidationError(
+      'All array items must be objects',
+      { 
+        nonObjectCount: nonObjects.length,
+        example: nonObjects[0]
+      }
+    );
+  }
   
-  // 3. Build rows
-  const rows = data.map(obj => {
-    // Get values in same order as schema keys
-    const values = Object.keys(schema).map(key => formatValue(obj[key]));
-    return '  ' + values.join(', ');
-  });
-  
-  // 4. Combine header + rows
-  return `${header}:\n${rows.join('\n')}\n`;
+  try {
+    // CRITICAL: Validate schema across ALL objects
+    const schema = validateAndMergeSchemas(data);
+    
+    // Build header
+    const header = buildTonlHeader(name, data.length, schema);
+    
+    // Build rows
+    const rows = data.map((obj, index) => {
+      try {
+        const values = Object.keys(schema).map(key => formatValue(obj[key]));
+        return '  ' + values.join(', ');
+      } catch (error) {
+        throw new TonlSchemaError(
+          `Error formatting row ${index + 1}`,
+          { row: index + 1, object: obj, error }
+        );
+      }
+    });
+    
+    // Combine
+    return `${header}:\n${rows.join('\n')}\n`;
+    
+  } catch (error) {
+    if (error instanceof TonlValidationError || error instanceof TonlSchemaError) {
+      throw error;
+    }
+    
+    throw new TonlSchemaError(
+      'Failed to convert JSON to TONL',
+      { originalError: error }
+    );
+  }
 }

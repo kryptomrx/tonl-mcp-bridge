@@ -1,87 +1,216 @@
 /**
- * Type Detector
- * Detects the type of a JavaScript value
+ * Enhanced Type Detector with extended type support
  */
 
 /**
- * Type names we support
+ * All supported type names
  */
 export type TypeName = 
+  // Primitives
   | "string"
-  | "number"
   | "boolean"
   | "null"
+  // Integers
+  | "int8"    // -128 to 127
+  | "int16"   // -32,768 to 32,767
+  | "int32"   // -2B to 2B
+  | "int64"   // Big integers
+  // Floats
+  | "float32"
+  | "float64"
+  // Special
+  | "date"
+  | "datetime"
   | "array"
   | "object";
 
 /**
- * Detect the type of a value
- * 
- * @param value - Any JavaScript value
- * @returns The type name as string
+ * Type ranges for integer detection
+ */
+const INT8_MAX = 127;
+const INT8_MIN = -128;
+const INT16_MAX = 32767;
+const INT16_MIN = -32768;
+const INT32_MAX = 2147483647;
+const INT32_MIN = -2147483648;
+
+/**
+ * Detect the most appropriate type for a number
+ */
+export function detectNumberType(value: number): TypeName {
+  // Check if it's a float
+  if (!Number.isInteger(value)) {
+    // Use float32 for smaller numbers, float64 for larger
+    return Math.abs(value) < 3.4e38 ? "float32" : "float64";
+  }
+  
+  // It's an integer - find smallest type that fits
+  if (value >= INT8_MIN && value <= INT8_MAX) {
+    return "int8";
+  }
+  
+  if (value >= INT16_MIN && value <= INT16_MAX) {
+    return "int16";
+  }
+  
+  if (value >= INT32_MIN && value <= INT32_MAX) {
+    return "int32";
+  }
+  
+  return "int64";
+}
+
+/**
+ * Detect if string is a date/datetime
+ */
+export function detectDateType(value: string): TypeName | null {
+  // ISO 8601 date: 2024-01-15
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return "date";
+  }
+  
+  // ISO 8601 datetime: 2024-01-15T10:30:00Z
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(value)) {
+    return "datetime";
+  }
+  
+  return null;
+}
+
+/**
+ * Enhanced type detection with extended types
  */
 export function detectType(value: unknown): TypeName {
-  // 1. Check null first (wegen typeof bug)
+  // Null check first
   if (value === null) {
     return "null";
   }
   
-  // 2. Check array (before object!)
+  // Array check
   if (Array.isArray(value)) {
     return "array";
   }
   
-  // 3. Use typeof for rest
+  // Type-specific detection
   const type = typeof value;
   
   if (type === "string") {
-    return "string";
+    // Check if it's a date/datetime
+    const dateType = detectDateType(value as string);
+    return dateType || "string";
   }
-
+  
   if (type === "number") {
-    return "number";
+    return detectNumberType(value as number);
   }
-
+  
   if (type === "boolean") {
     return "boolean";
   }
-
+  
   if (type === "object") {
     return "object";
   }
   
-  // Fallback (should never reach here)
-  return "object";
+  return "object"; // Fallback
 }
 
 /**
- * Schema for an object (maps property names to types)
+ * Schema for an object
  */
 export type ObjectSchema = Record<string, TypeName>;
 
 /**
- * Detect the schema of an object
- * 
- * @param obj - The object to analyze
- * @returns Schema mapping property names to types
- * 
- * @example
- * detectObjectSchema({ id: 1, name: "Alice" })
- * // Returns: { id: "number", name: "string" }
+ * Detect schema from a single object
  */
 export function detectObjectSchema(obj: Record<string, unknown>): ObjectSchema {
   const schema: ObjectSchema = {};
   
-  // Loop through all properties
   for (const key in obj) {
     const value = obj[key];
-    
-    // Detect type of value using our detectType function
-    const valueType = detectType(value);
-    
-    // Save in schema object
-    schema[key] = valueType;
+    schema[key] = detectType(value);
   }
   
   return schema;
+}
+
+/**
+ * CRITICAL: Validate schema across ALL objects
+ * Returns unified schema or throws error if incompatible
+ */
+export function validateAndMergeSchemas(
+  objects: Record<string, unknown>[]
+): ObjectSchema {
+  if (objects.length === 0) {
+    return {};
+  }
+  
+  // Collect all keys from all objects
+  const allKeys = new Set<string>();
+  objects.forEach(obj => {
+    Object.keys(obj).forEach(key => allKeys.add(key));
+  });
+  
+  // Validate each key across all objects
+  const mergedSchema: ObjectSchema = {};
+  
+  for (const key of allKeys) {
+    const types = new Set<TypeName>();
+    let hasNull = false;
+    
+    // Check type of this key in all objects
+    objects.forEach(obj => {
+      if (key in obj) {
+        const type = detectType(obj[key]);
+        if (type === "null") {
+          hasNull = true;
+        } else {
+          types.add(type);
+        }
+      } else {
+        hasNull = true; // Missing key = nullable
+      }
+    });
+    
+    // Determine final type
+    if (types.size === 0) {
+      // Only nulls
+      mergedSchema[key] = "null";
+    } else if (types.size === 1) {
+      // Consistent type
+      const [type] = types;
+      mergedSchema[key] = type;
+    } else {
+      // Mixed types - use most general
+      // For numbers, use largest type
+      if (hasNumberTypes(types)) {
+        mergedSchema[key] = getMostGeneralNumberType(types);
+      } else {
+        // For other types, fall back to string (most flexible)
+        mergedSchema[key] = "string";
+      }
+    }
+  }
+  
+  return mergedSchema;
+}
+
+function hasNumberTypes(types: Set<TypeName>): boolean {
+  const numberTypes: TypeName[] = ["int8", "int16", "int32", "int64", "float32", "float64"];
+  return Array.from(types).some(t => numberTypes.includes(t));
+}
+
+function getMostGeneralNumberType(types: Set<TypeName>): TypeName {
+  const typeArray = Array.from(types);
+  
+  // If any float, use largest float
+  if (typeArray.some(t => t === "float64" || t === "float32")) {
+    return "float64";
+  }
+  
+  // Otherwise use largest int
+  if (typeArray.includes("int64")) return "int64";
+  if (typeArray.includes("int32")) return "int32";
+  if (typeArray.includes("int16")) return "int16";
+  return "int8";
 }
