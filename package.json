@@ -16,7 +16,8 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
-    "test": "vitest",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "prepublishOnly": "npm run build && npm test",
     "cli": "npm run build && node dist/cli/index.js"
   },
