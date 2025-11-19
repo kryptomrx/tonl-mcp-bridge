@@ -12,6 +12,7 @@ import { tonlToJson } from '../core/tonl-to-json.js';
 import { estimateTokens, calculateSavings } from '../utils/token-counter.js';
 import { yamlToTonl } from '../core/yaml-to-tonl.js';
 import { tonlToYaml } from '../core/tonl-to-yaml.js';
+import { countTokens, calculateRealSavings } from '../utils/tokenizer.js';
 
 const program = new Command();
 
@@ -22,12 +23,16 @@ program
 
 program
   .command('convert')
-  .description('Convert file between JSON, YAML, and TONL formats')
   .argument('<input>', 'Input file path')
   .argument('[output]', 'Output file path (optional, auto-generated if not provided)')
   .option('-s, --stats', 'Show token savings statistics')
   .option('-n, --name <name>', 'Collection name for TONL output (default: "data")')
-  .action((input: string, output: string | undefined, options: { stats?: boolean; name?: string }) => {
+  .action(async (input: string, output: string | undefined, options: any) => {
+    // ✅ CRITICAL FIX: In Commander v14, options ist der DRITTE Parameter
+    console.log('🔍 DEBUG - input:', input);
+    console.log('🔍 DEBUG - output:', output);
+    console.log('🔍 DEBUG - options:', options);
+    
     try {
       // Read input file
       const inputContent = readFileSync(input, 'utf-8');
@@ -91,16 +96,31 @@ program
       
       // Show stats if requested
       if (options.stats) {
-        const inputTokens = estimateTokens(inputContent);
-        const outputTokens = estimateTokens(outputContent);
+        console.log('📍 Stats section reached!');
         
-        console.log('\n📊 Token Statistics:');
-        console.log(`   Input:  ${inputTokens} tokens`);
-        console.log(`   Output: ${outputTokens} tokens`);
-        
-        if (isJsonInput || isYamlInput) {
-          const savings = calculateSavings(inputContent, outputContent);
+        try {
+          const savings = calculateRealSavings(inputContent, outputContent, 'gpt-4');
+          
+          console.log('\n📊 Token Statistics (GPT-4 Tokenizer):');
+          console.log(`   Input:  ${savings.originalTokens} tokens`);
+          console.log(`   Output: ${savings.compressedTokens} tokens`);
           console.log(`   Saved:  ${savings.savedTokens} tokens (${savings.savingsPercent}%)`);
+        } catch (error) {
+          console.log('⚠️  Tokenizer error, using estimation');
+          console.log('   Error:', error);
+          
+          // Fallback to naive estimation
+          const inputTokens = estimateTokens(inputContent);
+          const outputTokens = estimateTokens(outputContent);
+          
+          console.log('\n📊 Token Statistics (Estimated):');
+          console.log(`   Input:  ${inputTokens} tokens`);
+          console.log(`   Output: ${outputTokens} tokens`);
+          
+          if (isJsonInput || isYamlInput) {
+            const savings = calculateSavings(inputContent, outputContent);
+            console.log(`   Saved:  ${savings.savedTokens} tokens (${savings.savingsPercent}%)`);
+          }
         }
       }
       
