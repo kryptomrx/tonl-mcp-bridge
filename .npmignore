@@ -1,0 +1,26 @@
+# Development files
+tests/
+*.test.ts
+*.test.js
+.github/
+.vscode/
+
+# Examples (users can see on GitHub)
+examples/
+
+# Build
+tsconfig.json
+vitest.config.ts
+
+# Git
+.git
+.gitignore
+
+# Docs
+*.md
+!README.md
+!LICENSE
+
+# Misc
+.DS_Store
+*.log
