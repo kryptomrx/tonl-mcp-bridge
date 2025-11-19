@@ -4,8 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [0.2.1] - 2025-11-19
 
-## [0.2.0] - 2024-11-19
+### Fixed
+- CLI now correctly displays version from package.json (was hardcoded to 0.1.0)
+- Removed duplicate import statements
+- Dynamic version reading from package.json
+
+## [0.2.0] - 2025-11-19
+...
+
+## [0.2.0] - 2025-11-19
 
 ### Added
 - **Extended Type System**: Automatic integer optimization (i8, i16, i32, i64)
@@ -31,7 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **33.9% token savings** on test data (verified with GPT-4 tokenizer)
 - Scales to **50%+ savings** with 100+ items
 
-## [0.1.0] - 2024-11-18
+## [0.1.0] - 2025-11-18
 
 ### Added
 - Initial release
