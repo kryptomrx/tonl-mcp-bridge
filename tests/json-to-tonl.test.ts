@@ -11,7 +11,12 @@ describe('JSON to TONL Converter', () => {
   describe('typeNameToTonl', () => {
     it('should convert type names correctly', () => {
       expect(typeNameToTonl('string')).toBe('str');
-      expect(typeNameToTonl('number')).toBe('i32');
+      expect(typeNameToTonl('int8')).toBe('i8');
+      expect(typeNameToTonl('int16')).toBe('i16');
+      expect(typeNameToTonl('int32')).toBe('i32');
+      expect(typeNameToTonl('int64')).toBe('i64');
+      expect(typeNameToTonl('float32')).toBe('f32');
+      expect(typeNameToTonl('float64')).toBe('f64');
       expect(typeNameToTonl('boolean')).toBe('bool');
       expect(typeNameToTonl('null')).toBe('null');
       expect(typeNameToTonl('array')).toBe('arr');
@@ -21,7 +26,7 @@ describe('JSON to TONL Converter', () => {
 
   describe('buildTonlHeader', () => {
     it('should build correct header', () => {
-      const schema = { id: 'number' as const, name: 'string' as const };
+      const schema = { id: 'int32' as const, name: 'string' as const };
       const result = buildTonlHeader('users', 2, schema);
       
       expect(result).toBe('users[2]{id:i32,name:str}');
@@ -60,7 +65,8 @@ describe('JSON to TONL Converter', () => {
       
       const result = jsonToTonl(data, 'users');
       
-      const expected = `users[2]{id:i32,name:str}:
+      // id=1,2 fits in int8
+      const expected = `users[2]{id:i8,name:str}:
   1, Alice
   2, Bob
 `;

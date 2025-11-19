@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { detectType, detectObjectSchema } from '../src/core/type-detector';
+
 describe('Type Detector', () => {
   
   it('should detect string type', () => {
@@ -8,8 +9,9 @@ describe('Type Detector', () => {
   });
 
   it('should detect number type', () => {
+    // 1234 fits in int16 range
     const result = detectType(1234);  
-    expect(result).toBe("number");
+    expect(result).toBe("int16");
   });
 
   it('should detect boolean type', () => {
@@ -41,7 +43,7 @@ describe('Object Schema Detector', () => {
     const result = detectObjectSchema(obj);
     
     expect(result).toEqual({
-      id: "number",
+      id: "int8",  // 1 fits in int8
       name: "string"
     });
   });
