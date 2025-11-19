@@ -100,14 +100,24 @@ program
       
       // Show stats if requested
       if (options.stats) {
-        try {
-          const savings = calculateRealSavings(inputContent, outputContent, 'gpt-4');
-          
-          console.log('\n📊 Token Statistics (GPT-4 Tokenizer):');
-          console.log(`   Input:  ${savings.originalTokens} tokens`);
-          console.log(`   Output: ${savings.compressedTokens} tokens`);
-          console.log(`   Saved:  ${savings.savedTokens} tokens (${savings.savingsPercent}%)`);
-        } catch (error) {
+try {
+  // Default model (can be changed with --model flag later)
+  const model = 'gpt-5';
+  const savings = calculateRealSavings(inputContent, outputContent, model);
+
+  // Display model name in output
+  const displayModel = model.toUpperCase().replace(/-/g, ' ');
+  console.log(`\n📊 Token Statistics (${displayModel} Tokenizer):`);
+  
+  console.log(`   Input:  ${savings.originalTokens} tokens`);
+  console.log(`   Output: ${savings.compressedTokens} tokens`);
+  console.log(`   Saved:  ${savings.savedTokens} tokens (${savings.savingsPercent}%)`);
+  
+  // Add note about tokenizer approximation
+  if (!model.startsWith('gpt')) {
+    console.log(`   Note: Using GPT-5 tokenizer as approximation for ${displayModel}`);
+  }
+} catch (error) {
           console.log('⚠️  Tokenizer unavailable, using estimation');
           
           // Fallback to naive estimation
