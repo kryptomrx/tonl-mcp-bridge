@@ -28,10 +28,6 @@ program
   .option('-s, --stats', 'Show token savings statistics')
   .option('-n, --name <name>', 'Collection name for TONL output (default: "data")')
   .action(async (input: string, output: string | undefined, options: any) => {
-    // ✅ CRITICAL FIX: In Commander v14, options ist der DRITTE Parameter
-    console.log('🔍 DEBUG - input:', input);
-    console.log('🔍 DEBUG - output:', output);
-    console.log('🔍 DEBUG - options:', options);
     
     try {
       // Read input file
@@ -106,7 +102,7 @@ program
           console.log(`   Output: ${savings.compressedTokens} tokens`);
           console.log(`   Saved:  ${savings.savedTokens} tokens (${savings.savingsPercent}%)`);
         } catch (error) {
-          console.log('⚠️  Tokenizer error, using estimation');
+          console.log('⚠️  Tokenizer unavailable, using estimation');
           console.log('   Error:', error);
           
           // Fallback to naive estimation
