@@ -39,3 +39,5 @@ export function calculateSavings(original: string, compressed: string): {
     savingsPercent: Math.round(savingsPercent * 10) / 10, // 1 decimal place
   };
 }
+// Re-export new tokenizer functions
+export { countTokens, calculateRealSavings, type ModelName } from './tokenizer.js';
