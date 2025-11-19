@@ -7,6 +7,8 @@
 
 import { Command } from 'commander';
 import { readFileSync, writeFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import { jsonToTonl } from '../core/json-to-tonl.js';
 import { tonlToJson } from '../core/tonl-to-json.js';
 import { estimateTokens, calculateSavings } from '../utils/token-counter.js';
@@ -14,12 +16,18 @@ import { yamlToTonl } from '../core/yaml-to-tonl.js';
 import { tonlToYaml } from '../core/tonl-to-yaml.js';
 import { countTokens, calculateRealSavings } from '../utils/tokenizer.js';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const packageJson = JSON.parse(
+  readFileSync(join(__dirname, '../../package.json'), 'utf-8')
+);
+
 const program = new Command();
 
 program
   .name('tonl')
   .description('Convert between JSON, YAML, and TONL formats for token optimization')
-  .version('0.1.0');
+  .version(packageJson.version);
 
 program
   .command('convert')
@@ -92,8 +100,6 @@ program
       
       // Show stats if requested
       if (options.stats) {
-        console.log('📍 Stats section reached!');
-        
         try {
           const savings = calculateRealSavings(inputContent, outputContent, 'gpt-4');
           
@@ -103,7 +109,6 @@ program
           console.log(`   Saved:  ${savings.savedTokens} tokens (${savings.savingsPercent}%)`);
         } catch (error) {
           console.log('⚠️  Tokenizer unavailable, using estimation');
-          console.log('   Error:', error);
           
           // Fallback to naive estimation
           const inputTokens = estimateTokens(inputContent);
