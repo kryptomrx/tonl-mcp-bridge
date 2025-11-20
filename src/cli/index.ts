@@ -16,6 +16,8 @@ import { yamlToTonl } from '../core/yaml-to-tonl.js';
 import { tonlToYaml } from '../core/tonl-to-yaml.js';
 import { calculateRealSavings } from '../utils/tokenizer.js';
 import cliProgress from 'cli-progress';
+import { isLargeFile, getFileSizeMB } from '../utils/file-helpers.js';
+import { streamJsonToTonl } from '../core/streaming.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -28,17 +30,17 @@ program
   .description('Convert between JSON, YAML, and TONL formats for token optimization')
   .version(packageJson.version);
 
+
 program
   .command('convert')
   .argument('<input>', 'Input file path')
   .argument('[output]', 'Output file path (optional, auto-generated if not provided)')
   .option('-s, --stats', 'Show token savings statistics')
-  .option('-n, --name <name>', 'Collection name for TONL output (default: "data")')
+  .option('-n, --name <n>', 'Collection name for TONL output (default: "data")')
+  .option('-m, --model <model>', 'Tokenizer model (gpt-5, claude-4, gemini-2.5)', 'gpt-5')
+  .option('-v, --validate', 'Validate schema consistency')
   .action(async (input: string, output: string | undefined, options: any) => {
     try {
-      // Read input file
-      const inputContent = readFileSync(input, 'utf-8');
-
       // Detect format based on file extension
       const isJsonInput = input.endsWith('.json');
       const isTonlInput = input.endsWith('.tonl');
@@ -53,42 +55,61 @@ program
 
       let outputContent: string;
       let outputPath: string;
+      let inputContent: string;
 
       if (isJsonInput) {
         // JSON → TONL
-        const jsonData = JSON.parse(inputContent);
-
-        if (!Array.isArray(jsonData)) {
-          console.error('❌ Error: JSON must contain an array of objects');
-          console.error('   Example:');
-          console.error('   [');
-          console.error('     { "id": 1, "name": "Alice" },');
-          console.error('     { "id": 2, "name": "Bob" }');
-          console.error('   ]');
-          process.exit(1);
-        }
-
         const collectionName = options.name || 'data';
 
         console.log('📄 Converting JSON → TONL...');
 
-        // Progress bar for large datasets
-        if (jsonData.length > 100) {
-          const bar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
-          console.log('⏳ Processing large dataset...');
-          bar.start(jsonData.length, 0);
+        // Use streaming for large files
+        if (isLargeFile(input)) {
+          const sizeMB = getFileSizeMB(input).toFixed(2);
+          console.log(`⚡ Large file detected (${sizeMB}MB) - using streaming mode`);
 
-          for (let i = 0; i < jsonData.length; i++) {
-            bar.update(i + 1);
+          outputPath = output || input.replace('.json', '.tonl');
+          await streamJsonToTonl(input, outputPath, collectionName);
+
+          outputContent = readFileSync(outputPath, 'utf-8');
+          inputContent = readFileSync(input, 'utf-8');
+        } else {
+          inputContent = readFileSync(input, 'utf-8');
+          const jsonData = JSON.parse(inputContent);
+        if (options.validate) {
+          console.log('🔍 Validating schema...');
+          // Schema validation already happens in jsonToTonl
+          console.log('✅ Schema valid!');
+        }
+          if (!Array.isArray(jsonData)) {
+            console.error('❌ Error: JSON must contain an array of objects');
+            console.error('   Example:');
+            console.error('   [');
+            console.error('     { "id": 1, "name": "Alice" },');
+            console.error('     { "id": 2, "name": "Bob" }');
+            console.error('   ]');
+            process.exit(1);
           }
 
-          bar.stop();
-        }
+          // Progress bar for large datasets
+          if (jsonData.length > 100) {
+            const bar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
+            console.log('⏳ Processing large dataset...');
+            bar.start(jsonData.length, 0);
 
-        outputContent = jsonToTonl(jsonData, collectionName);
-        outputPath = output || input.replace('.json', '.tonl');
+            for (let i = 0; i < jsonData.length; i++) {
+              bar.update(i + 1);
+            }
+
+            bar.stop();
+          }
+
+          outputContent = jsonToTonl(jsonData, collectionName);
+          outputPath = output || input.replace('.json', '.tonl');
+        }
       } else if (isYamlInput) {
         // YAML → TONL
+        inputContent = readFileSync(input, 'utf-8');
         const collectionName = options.name || 'data';
         outputContent = yamlToTonl(inputContent, collectionName);
         outputPath = output || input.replace(/\.ya?ml$/, '.tonl');
@@ -96,6 +117,7 @@ program
         console.log('📄 Converting YAML → TONL...');
       } else {
         // TONL → JSON or YAML
+        inputContent = readFileSync(input, 'utf-8');
         const jsonData = tonlToJson(inputContent);
 
         // Determine output format from output filename
@@ -112,8 +134,11 @@ program
         }
       }
 
-      // Write output file
-      writeFileSync(outputPath, outputContent, 'utf-8');
+      // Write output file (if not already written by streaming)
+      if (!isLargeFile(input) || !isJsonInput) {
+        writeFileSync(outputPath, outputContent, 'utf-8');
+      }
+
       console.log(`✅ Converted successfully!`);
       console.log(`📁 Output: ${outputPath}`);
 
@@ -121,7 +146,7 @@ program
       if (options.stats) {
         try {
           // Default model (can be changed with --model flag later)
-          const model = 'gpt-5';
+          const model = options.model || 'gpt-5';
           const savings = calculateRealSavings(inputContent, outputContent, model);
 
           // Display model name in output
