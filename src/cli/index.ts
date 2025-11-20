@@ -18,6 +18,8 @@ import { calculateRealSavings } from '../utils/tokenizer.js';
 import cliProgress from 'cli-progress';
 import { isLargeFile, getFileSizeMB } from '../utils/file-helpers.js';
 import { streamJsonToTonl } from '../core/streaming.js';
+import { startWatch } from './watch.js';
+import { batchConvert } from './batch.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -182,6 +184,52 @@ program
       console.error('❌ Error:', error instanceof Error ? error.message : String(error));
       process.exit(1);
     }
+  });
+
+// Watch command
+// Watch command
+program
+  .command('watch')
+  .argument('<pattern>', 'File pattern to watch (e.g., *.json or data/*.json)')
+  .option('-n, --name <name>', 'Collection name for TONL output', 'data')
+  .option('-o, --output-dir <dir>', 'Output directory for converted files')
+  .description('Watch files for changes and auto-convert')
+  .action((pattern: string, options: any) => {
+    // Use glob to expand pattern first
+    import('glob').then(({ glob }) => {
+      glob(pattern).then((files) => {
+        if (files.length === 0) {
+          console.log(`❌ No files found matching: ${pattern}`);
+          return;
+        }
+        
+        console.log(`👀 Watching ${files.length} file(s)...\n`);
+        
+        // Watch each file individually
+        startWatch({
+          pattern: files, // Pass array of files
+          collectionName: options.name,
+          outputDir: options.outputDir,
+        });
+      });
+    });
+  });
+
+// Batch command
+program
+  .command('batch')
+  .argument('<pattern>', 'File pattern to convert (e.g., "*.json" or "data/*.json")')
+  .option('-n, --name <name>', 'Collection name for TONL output', 'data')
+  .option('-o, --output-dir <dir>', 'Output directory for converted files')
+  .option('-s, --stats', 'Show conversion statistics')
+  .description('Convert multiple files at once')
+  .action(async (pattern: string, options: any) => {
+    await batchConvert({
+      pattern,
+      collectionName: options.name,
+      outputDir: options.outputDir,
+      stats: options.stats,
+    });
   });
 
 program.parse();
