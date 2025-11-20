@@ -7,9 +7,9 @@ import { jsonToTonl, tonlToJson } from 'tonl-mcp-bridge';
 
 // Sample data
 const users = [
-  { id: 1, name: "Alice", age: 25, active: true },
-  { id: 2, name: "Bob", age: 30, active: false },
-  { id: 3, name: "Charlie", age: 35, active: true }
+  { id: 1, name: 'Alice', age: 25, active: true },
+  { id: 2, name: 'Bob', age: 30, active: false },
+  { id: 3, name: 'Charlie', age: 35, active: true },
 ];
 
 console.log('📊 Original JSON:');

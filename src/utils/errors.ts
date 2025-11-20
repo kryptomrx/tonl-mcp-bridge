@@ -57,29 +57,27 @@ export function createDetailedError(
   }
 ): string {
   let message = baseMessage;
-  
+
   if (context.line !== undefined) {
     message += ` at line ${context.line}`;
   }
-  
+
   if (context.column !== undefined) {
     message += `, column ${context.column}`;
   }
-  
+
   if (context.expected) {
     message += `\n  Expected: ${context.expected}`;
   }
-  
+
   if (context.received) {
     message += `\n  Received: ${context.received}`;
   }
-  
+
   if (context.input) {
-    const preview = context.input.length > 50 
-      ? context.input.slice(0, 50) + '...'
-      : context.input;
+    const preview = context.input.length > 50 ? context.input.slice(0, 50) + '...' : context.input;
     message += `\n  Input: ${preview}`;
   }
-  
+
   return message;
 }

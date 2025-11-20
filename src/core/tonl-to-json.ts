@@ -8,7 +8,7 @@
  */
 export function tonlTypeToValue(value: string, type: string): unknown {
   const trimmed = value.trim();
-  
+
   // Handle quoted strings (remove quotes and unescape)
   if (trimmed.startsWith('"') && trimmed.endsWith('"')) {
     const unquoted = trimmed.slice(1, -1);
@@ -19,7 +19,7 @@ export function tonlTypeToValue(value: string, type: string): unknown {
       .replace(/\\"/g, '"')
       .replace(/\\\\/g, '\\');
   }
-  
+
   // Convert based on type
   switch (type) {
     // All integer types
@@ -31,37 +31,37 @@ export function tonlTypeToValue(value: string, type: string): unknown {
     case 'f32':
     case 'f64':
       return Number(trimmed);
-    
+
     case 'bool':
       return trimmed === 'true';
-    
+
     case 'null':
       return null;
-    
+
     case 'str':
       return trimmed;
-    
+
     case 'date':
       return trimmed;
-    
+
     case 'datetime':
       return trimmed;
-    
+
     case 'arr':
       if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
         const content = trimmed.slice(1, -1);
         if (content.length === 0) return [];
-        return content.split(',').map(v => v.trim());
+        return content.split(',').map((v) => v.trim());
       }
       return [];
-    
+
     case 'obj':
       try {
         return JSON.parse(trimmed);
       } catch {
         return trimmed;
       }
-    
+
     default:
       return trimmed;
   }
@@ -76,22 +76,22 @@ export function parseTonlHeader(header: string): {
   schema: Record<string, string>;
 } {
   const match = header.match(/^(\w+)\[(\d+)\]\{([^}]+)\}$/);
-  
+
   if (!match) {
     throw new Error(`Invalid TONL header: ${header}`);
   }
-  
+
   const name = match[1];
   const count = parseInt(match[2], 10);
   const schemaStr = match[3];
-  
+
   const schema: Record<string, string> = {};
-  
-  schemaStr.split(',').forEach(entry => {
+
+  schemaStr.split(',').forEach((entry) => {
     const [key, type] = entry.split(':');
     schema[key.trim()] = type.trim();
   });
-  
+
   return { name, count, schema };
 }
 
@@ -99,33 +99,36 @@ export function parseTonlHeader(header: string): {
  * Convert TONL string to JSON array
  */
 export function tonlToJson(tonl: string): Record<string, unknown>[] {
-  const lines = tonl.split('\n').map(l => l.trim()).filter(l => l);
-  
+  const lines = tonl
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l);
+
   if (lines.length === 0) {
     return [];
   }
-  
+
   const headerLine = lines[0].replace(/:$/, '');
   const { schema } = parseTonlHeader(headerLine);
-  
+
   const dataLines = lines.slice(1);
-  
-  const result = dataLines.map(line => {
+
+  const result = dataLines.map((line) => {
     const obj: Record<string, unknown> = {};
     const keys = Object.keys(schema);
-    
+
     const values = splitRespectingQuotes(line);
-    
+
     keys.forEach((key, index) => {
       if (index < values.length) {
         const type = schema[key];
         obj[key] = tonlTypeToValue(values[index], type);
       }
     });
-    
+
     return obj;
   });
-  
+
   return result;
 }
 
@@ -136,10 +139,10 @@ export function splitRespectingQuotes(str: string): string[] {
   const result: string[] = [];
   let current = '';
   let inQuotes = false;
-  
+
   for (let i = 0; i < str.length; i++) {
     const char = str[i];
-    
+
     if (char === '"') {
       inQuotes = !inQuotes;
       current += char;
@@ -150,10 +153,10 @@ export function splitRespectingQuotes(str: string): string[] {
       current += char;
     }
   }
-  
+
   if (current) {
     result.push(current.trim());
   }
-  
+
   return result;
 }

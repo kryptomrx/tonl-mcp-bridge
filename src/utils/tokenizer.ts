@@ -9,7 +9,7 @@ import { encodingForModel } from 'js-tiktoken';
  * Supported models for token counting
  * Updated for 2025 models
  */
-export type ModelName = 
+export type ModelName =
   // OpenAI (2025)
   | 'gpt-5'
   | 'gpt-5.1'
@@ -42,30 +42,30 @@ export function countTokens(text: string, model: ModelName = 'gpt-5'): number {
   try {
     // Map newer models to compatible tokenizer
     let encodingModel = model;
-    
+
     // Claude models use GPT-4 tokenizer as approximation
     if (model.startsWith('claude')) {
       encodingModel = 'gpt-4';
     }
-    
+
     // Gemini models use GPT-4 tokenizer as approximation
     if (model.startsWith('gemini')) {
       encodingModel = 'gpt-4';
     }
-    
+
     // Grok/DeepSeek/Llama use GPT-4 tokenizer as approximation
     if (model.startsWith('grok') || model.startsWith('deepseek') || model.startsWith('llama')) {
       encodingModel = 'gpt-4';
     }
-    
+
     // GPT-5 uses GPT-4 tokenizer (same family)
     if (model.startsWith('gpt-5')) {
       encodingModel = 'gpt-4';
     }
-    
+
     const enc = encodingForModel(encodingModel as any);
     const tokens = enc.encode(text);
-    
+
     return tokens.length;
   } catch (error) {
     console.warn('Tokenizer failed, using naive estimation:', error);
@@ -82,7 +82,7 @@ export function countTokens(text: string, model: ModelName = 'gpt-5'): number {
 export function calculateRealSavings(
   original: string,
   compressed: string,
-  model: ModelName = 'gpt-5'  // ← Changed from 'gpt-4'
+  model: ModelName = 'gpt-5' // ← Changed from 'gpt-4'
 ): {
   originalTokens: number;
   compressedTokens: number;
@@ -95,12 +95,12 @@ export function calculateRealSavings(
   const compressedTokens = countTokens(compressed, model);
   const savedTokens = originalTokens - compressedTokens;
   const savingsPercent = (savedTokens / originalTokens) * 100;
-  
+
   return {
     originalTokens,
     compressedTokens,
     savedTokens,
     savingsPercent: Math.round(savingsPercent * 10) / 10,
-    model
+    model,
   };
 }

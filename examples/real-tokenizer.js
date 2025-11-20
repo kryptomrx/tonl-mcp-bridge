@@ -11,7 +11,7 @@ const products = Array.from({ length: 50 }, (_, i) => ({
   name: `Product ${i + 1}`,
   price: 19.99 + i,
   stock: 100 - i,
-  active: i % 2 === 0
+  active: i % 2 === 0,
 }));
 
 console.log('📦 Dataset: 50 products\n');
@@ -40,7 +40,7 @@ const costPer1k = 0.03; // GPT-4 input pricing
 const moneySaved = (savings.savedTokens / 1000) * costPer1k;
 
 console.log(`\n💰 Cost Impact (at $${costPer1k}/1K tokens):`);
-console.log(`   JSON:  $${(savings.originalTokens / 1000 * costPer1k).toFixed(4)}`);
-console.log(`   TONL:  $${(savings.compressedTokens / 1000 * costPer1k).toFixed(4)}`);
+console.log(`   JSON:  $${((savings.originalTokens / 1000) * costPer1k).toFixed(4)}`);
+console.log(`   TONL:  $${((savings.compressedTokens / 1000) * costPer1k).toFixed(4)}`);
 console.log(`   Saved: $${moneySaved.toFixed(4)} per request`);
 console.log(`   \n   At 1M requests/month: $${(moneySaved * 1000000).toFixed(2)} saved! 🔥`);

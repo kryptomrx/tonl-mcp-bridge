@@ -1,7 +1,7 @@
 /**
  * TONL System Prompt
  * Explains TONL format to LLMs for proper parsing
- * 
+ *
  * Use this in your prompts when sending TONL data to Claude, GPT, etc.
  */
 
@@ -41,11 +41,11 @@ TONL v2.0 provides 60% additional compression while maintaining full LLM compati
 
 /**
  * Build a complete prompt with TONL data
- * 
+ *
  * @param tonlData - TONL formatted string
  * @param userQuery - User's question
  * @returns Complete prompt for LLM
- * 
+ *
  * @example
  * const prompt = buildTonlPrompt(tonlData, "What are the top users?");
  * const response = await llm.complete(prompt);
