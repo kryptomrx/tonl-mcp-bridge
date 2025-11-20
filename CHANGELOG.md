@@ -4,6 +4,32 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [0.3.0] - 2024-11-20
+
+### Added
+- **Streaming API**: Handles large files (>10MB) efficiently with memory-safe streaming
+- **--model flag**: Choose tokenizer model (gpt-5, claude-4, gemini-2.5, etc.)
+- **--validate flag**: Validate schema consistency before conversion
+- **Progress bar**: Visual feedback for large datasets (>100 items)
+- **File size detection**: Automatic mode selection based on file size
+- **Better error messages**: Detailed context for common errors
+
+### Changed
+- **Error handling**: TonlParseError with detailed context
+- **CLI output**: More informative messages and validation
+- **Performance**: Streaming reduces memory usage by 90% for large files
+
+### Fixed
+- Duplicate option flags in CLI
+- Type detection for unused variables
+- ESLint configuration for v9
+
+### Infrastructure
+- **CI/CD**: GitHub Actions with automated testing on Node 18, 20, 22
+- **ESLint + Prettier**: Code quality and formatting
+- **CodeCov**: Test coverage reporting (56.52%)
+- **Pre-commit hooks**: Automatic linting before commits
+
 ## [0.2.1] - 2025-11-19
 
 ### Fixed
