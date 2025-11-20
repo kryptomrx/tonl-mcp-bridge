@@ -131,9 +131,25 @@ tonl convert data.tonl output.yaml
 # Custom collection name
 tonl convert users.json --name users
 
+# Choose tokenizer model
+tonl convert data.json -s --model claude-4
+tonl convert data.json -s --model gemini-2.5
+
+# Validate schema consistency
+tonl convert data.json --validate
+
 # Specify output path
 tonl convert input.json output.tonl
+
+# Combine flags
+tonl convert large-data.json -s -m gpt-5 --validate
 ```
+
+**Available models:**
+- `gpt-5` (default)
+- `gpt-4`, `gpt-3.5-turbo`
+- `claude-4-opus`, `claude-4-sonnet`, `claude-sonnet-4.5`
+- `gemini-2.5-pro`, `gemini-2.5-flash`
 
 ## Programmatic Usage
 
@@ -298,32 +314,37 @@ node dist/cli/index.js convert test.json -s
 
 ## Roadmap
 
-### ✅ v0.2.1 (Current)
+### ✅ v0.2.1 (Released)
 - [x] Support for 2025 AI models (GPT-5, Claude 4, Gemini 2.5)
-- [x] Dynamic model display in CLI
 - [x] Extended type system (i8-i64, f32-f64, date, datetime)
-- [x] Real tokenizer integration (GPT-5, Claude, Gemini)
+- [x] Real tokenizer integration
 - [x] Schema validation across all objects
-- [x] Lossless round-trip conversion
 - [x] 45/45 tests passing
 
-### 🚧 v0.3.0 (Next)
-- [ ] `--model` flag (choose GPT-5, Claude 4, Gemini, etc.)
-- [ ] `--validate` flag for schema checking
-- [ ] Streaming API for large files
-- [ ] Performance benchmarks vs alternatives
+### ✅ v0.3.0 (Current)
+- [x] Streaming API for large files (>10MB)
+- [x] `--model` flag (gpt-5, claude-4, gemini-2.5)
+- [x] `--validate` flag
+- [x] Progress bar for large datasets
+- [x] Better error handling with detailed context
+- [x] CI/CD pipeline with GitHub Actions
+- [x] ESLint + Prettier + CodeCov
 
-### 🎯 v0.5.0 (Future)
-- [ ] MCP Server implementation (auto-TONL gateway!)
+### 🚧 v0.4.0 (Next - December 2024)
+- [ ] Nested objects support (beta)
+- [ ] `--watch` mode
 - [ ] Batch processing
-- [ ] Progress bars for large conversions
-- [ ] OpenWebUI integration
+- [ ] 80+ unit tests
 
-### 💎 v1.0.0 (Production)
-- [ ] Full test coverage
+### 🎯 v0.5.0 (Q1 2025)
+- [ ] MCP Server implementation
+- [ ] LangChain/LlamaIndex integration
+- [ ] Middleware support
+
+### 💎 v1.0.0 (Q1 2025)
+- [ ] 100% test coverage
 - [ ] Documentation site
-- [ ] Community examples
-- [ ] Performance optimization
+- [ ] Production ready
 
 ## Tech Stack
 
