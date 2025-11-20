@@ -2,7 +2,7 @@ name: Tests
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, 'feat/**' ]  # ← ADD this
   pull_request:
     branches: [ main, develop ]
 
@@ -31,3 +31,11 @@ jobs:
     
     - name: Build
       run: npm run build
+    
+    - name: Generate coverage
+      run: npm run test:coverage
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}

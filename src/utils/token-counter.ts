@@ -10,18 +10,21 @@
 export function estimateTokens(text: string): number {
   // Remove extra whitespace
   const cleaned = text.trim();
-  
+
   // Average: ~4 characters per token
   const charCount = cleaned.length;
   const tokenCount = Math.ceil(charCount / 4);
-  
+
   return tokenCount;
 }
 
 /**
  * Calculate token savings between two texts
  */
-export function calculateSavings(original: string, compressed: string): {
+export function calculateSavings(
+  original: string,
+  compressed: string
+): {
   originalTokens: number;
   compressedTokens: number;
   savedTokens: number;
@@ -31,7 +34,7 @@ export function calculateSavings(original: string, compressed: string): {
   const compressedTokens = estimateTokens(compressed);
   const savedTokens = originalTokens - compressedTokens;
   const savingsPercent = (savedTokens / originalTokens) * 100;
-  
+
   return {
     originalTokens,
     compressedTokens,
