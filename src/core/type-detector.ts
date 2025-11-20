@@ -133,6 +133,53 @@ export function detectObjectSchema(obj: Record<string, unknown>): ObjectSchema {
 
   return schema;
 }
+/**
+ * Detect nested object structure
+ */
+export function detectNestedSchema(obj: Record<string, unknown>): {
+  schema: ObjectSchema;
+  hasNested: boolean;
+} {
+  const schema: ObjectSchema = {};
+  let hasNested = false;
+
+  for (const key in obj) {
+    const value = obj[key];
+    const type = detectType(value);
+    
+    schema[key] = type;
+    
+    if (type === 'object' || type === 'array') {
+      hasNested = true;
+    }
+  }
+
+  return { schema, hasNested };
+}
+
+/**
+ * Flatten nested object for TONL v1 compatibility
+ */
+export function flattenObject(
+  obj: Record<string, unknown>,
+  prefix = ''
+): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+
+  for (const key in obj) {
+    const value = obj[key];
+    const newKey = prefix ? `${prefix}_${key}` : key;
+
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      // Nested object - recurse
+      Object.assign(result, flattenObject(value as Record<string, unknown>, newKey));
+    } else {
+      result[newKey] = value;
+    }
+  }
+
+  return result;
+}
 
 /**
  * CRITICAL: Validate schema across ALL objects
