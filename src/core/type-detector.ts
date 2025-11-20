@@ -160,12 +160,10 @@ export function validateAndMergeSchemas(objects: Record<string, unknown>[]): Obj
       if (key in obj) {
         const type = detectType(obj[key]);
         if (type === 'null') {
-          hasNull = true;
         } else {
           types.add(type);
         }
       } else {
-        hasNull = true; // Missing key = nullable
       }
     });
 
