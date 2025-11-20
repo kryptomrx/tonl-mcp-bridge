@@ -3,7 +3,8 @@
 > Reduce LLM token costs by 30-60% with TONL format
 
 [![npm version](https://img.shields.io/npm/v/tonl-mcp-bridge.svg)](https://www.npmjs.com/package/tonl-mcp-bridge)
-[![Tests](https://img.shields.io/badge/tests-44%20passing-brightgreen)](https://github.com/kryptomrx/tonl-mcp-bridge)
+[![Tests](https://github.com/kryptomrx/tonl-mcp-bridge/actions/workflows/test.yml/badge.svg)](https://github.com/kryptomrx/tonl-mcp-bridge/actions/workflows/test.yml)
+[![codecov](https://codecov.io/gh/kryptomrx/tonl-mcp-bridge/branch/main/graph/badge.svg)](https://codecov.io/gh/kryptomrx/tonl-mcp-bridge)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)](https://www.typescriptlang.org/)
 [![License](https://img.shields.io/npm/l/tonl-mcp-bridge.svg)](https://github.com/kryptomrx/tonl-mcp-bridge/blob/main/LICENSE)
 
