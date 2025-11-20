@@ -22,7 +22,8 @@
     "cli": "npm run build && node dist/cli/index.js",
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix",
-    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\""
+    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
+    "test:coverage": "vitest run --coverage"
   },
   "keywords": [
     "tonl",
@@ -71,6 +72,7 @@
     "@types/node": "^20.19.25",
     "@typescript-eslint/eslint-plugin": "^8.47.0",
     "@typescript-eslint/parser": "^8.47.0",
+    "@vitest/coverage-v8": "^1.6.1",
     "eslint": "^9.39.1",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.4",
