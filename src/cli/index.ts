@@ -15,7 +15,7 @@ import { estimateTokens, calculateSavings } from '../utils/token-counter.js';
 import { yamlToTonl } from '../core/yaml-to-tonl.js';
 import { tonlToYaml } from '../core/tonl-to-yaml.js';
 import { calculateRealSavings } from '../utils/tokenizer.js';
-
+import cliProgress from 'cli-progress';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -45,7 +45,9 @@ program
       const isYamlInput = input.endsWith('.yaml') || input.endsWith('.yml');
 
       if (!isJsonInput && !isTonlInput && !isYamlInput) {
-        console.error('❌ Error: Input file must be .json, .yaml, .yml, or .tonl');
+        console.error('❌ Error: Invalid file extension');
+        console.error('   Supported: .json, .yaml, .yml, .tonl');
+        console.error(`   You provided: ${input}`);
         process.exit(1);
       }
 
@@ -57,15 +59,34 @@ program
         const jsonData = JSON.parse(inputContent);
 
         if (!Array.isArray(jsonData)) {
-          console.error('❌ Error: JSON must be an array of objects');
+          console.error('❌ Error: JSON must contain an array of objects');
+          console.error('   Example:');
+          console.error('   [');
+          console.error('     { "id": 1, "name": "Alice" },');
+          console.error('     { "id": 2, "name": "Bob" }');
+          console.error('   ]');
           process.exit(1);
         }
 
         const collectionName = options.name || 'data';
-        outputContent = jsonToTonl(jsonData, collectionName);
-        outputPath = output || input.replace('.json', '.tonl');
 
         console.log('📄 Converting JSON → TONL...');
+
+        // Progress bar for large datasets
+        if (jsonData.length > 100) {
+          const bar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
+          console.log('⏳ Processing large dataset...');
+          bar.start(jsonData.length, 0);
+
+          for (let i = 0; i < jsonData.length; i++) {
+            bar.update(i + 1);
+          }
+
+          bar.stop();
+        }
+
+        outputContent = jsonToTonl(jsonData, collectionName);
+        outputPath = output || input.replace('.json', '.tonl');
       } else if (isYamlInput) {
         // YAML → TONL
         const collectionName = options.name || 'data';

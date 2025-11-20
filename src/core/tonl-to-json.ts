@@ -2,10 +2,13 @@
  * Enhanced TONL to JSON Parser
  * Now with extended type support
  */
-
 /**
  * Convert TONL type string to actual JavaScript value
  */
+
+import { TonlParseError, createDetailedError } from '../utils/errors.js';
+
+
 export function tonlTypeToValue(value: string, type: string): unknown {
   const trimmed = value.trim();
 
@@ -77,9 +80,20 @@ export function parseTonlHeader(header: string): {
 } {
   const match = header.match(/^(\w+)\[(\d+)\]\{([^}]+)\}$/);
 
-  if (!match) {
-    throw new Error(`Invalid TONL header: ${header}`);
-  }
+
+if (!match) {
+  throw new TonlParseError(
+    createDetailedError('Invalid TONL header format', {
+      input: header,
+      expected: 'name[count]{field:type,field:type}',
+      received: header,
+    })
+  );
+}
+
+
+
+
 
   const name = match[1];
   const count = parseInt(match[2], 10);
