@@ -38,9 +38,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dynamic version reading from package.json
 
 ## [0.2.0] - 2025-11-19
-...
-
-## [0.2.0] - 2025-11-19
 
 ### Added
 - **Extended Type System**: Automatic integer optimization (i8, i16, i32, i64)

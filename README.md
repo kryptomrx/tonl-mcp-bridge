@@ -330,7 +330,7 @@ node dist/cli/index.js convert test.json -s
 - [x] CI/CD pipeline with GitHub Actions
 - [x] ESLint + Prettier + CodeCov
 
-### 🚧 v0.4.0 (Next - December 2024)
+### 🚧 v0.4.0 (Next - December 2025)
 - [ ] Nested objects support (beta)
 - [ ] `--watch` mode
 - [ ] Batch processing
