@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2025-11-22
+
+### Added
+- **SDK Foundation**: Base architecture for database adapters
+- **PostgreSQL Adapter**: Full-featured PostgreSQL integration with connection pooling
+- **SDK Methods**: `queryToTonl()` and `queryWithStats()` for automatic TONL conversion
+- **Demo Setup**: Complete Docker-based demo in `examples/sdk-demo/`
+- **Security**: Git pre-commit hooks to prevent accidental IP/credential commits
+- **Tests**: 2 new SDK tests (92 total, up from 90)
+
+### Technical Details
+- New `BaseAdapter` class as foundation for all database adapters
+- `PostgresAdapter` with automatic TONL conversion
+- Real token statistics with configurable LLM models
+- Docker Compose setup for local testing
+- Example code and documentation
+
+### Usage
+```typescript
+import { PostgresAdapter } from 'tonl-mcp-bridge';
+
+const db = new PostgresAdapter({ host, database, user, password });
+await db.connect();
+const result = await db.queryWithStats('SELECT * FROM users', 'users');
+console.log(`Saved ${result.stats.savingsPercent}% tokens`);
+```
+
+### Breaking Changes
+None - fully backward compatible
+
+
 ## [0.5.0] - 2025-11-21
 
 ### Added
