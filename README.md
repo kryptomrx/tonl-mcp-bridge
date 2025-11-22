@@ -1,225 +1,150 @@
-# TONL-MCP Bridge 🌉
+# TONL-MCP Bridge
 
-> Reduce LLM token costs by 30-60% with TONL format
+> Token-optimized data format for LLM context windows
 
 [![npm version](https://img.shields.io/npm/v/tonl-mcp-bridge.svg)](https://www.npmjs.com/package/tonl-mcp-bridge)
 [![Tests](https://github.com/kryptomrx/tonl-mcp-bridge/actions/workflows/test.yml/badge.svg)](https://github.com/kryptomrx/tonl-mcp-bridge/actions/workflows/test.yml)
-[![codecov](https://codecov.io/gh/kryptomrx/tonl-mcp-bridge/graph/badge.svg?token=YOUR_TOKEN)](https://codecov.io/gh/kryptomrx/tonl-mcp-bridge)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)](https://www.typescriptlang.org/)
 [![License](https://img.shields.io/npm/l/tonl-mcp-bridge.svg)](https://github.com/kryptomrx/tonl-mcp-bridge/blob/main/LICENSE)
 
-## What is this?
+## Overview
 
-A production-ready TypeScript library and CLI tool that converts JSON/YAML data to TONL (Token Optimized Natural Language) format, reducing token usage by 30-60% for modern LLMs (GPT-5, Claude 4, Gemini 2.5).
+TONL-MCP Bridge is a TypeScript library and CLI tool for converting structured data between JSON/YAML and TONL (Token Optimized Natural Language) format. When used with datasets of 10+ similar objects, TONL can reduce token usage by 30-60% compared to JSON.
 
-**Perfect for:**
-- 🤖 RAG systems with structured data
-- 📊 Sending tabular data to LLMs
-- 💬 AI applications with repetitive JSON structures
-- 📝 Prompt libraries and configuration files
-- 🔄 Real-time data conversion with watch mode
-- 📦 Batch processing multiple files
+**Primary use cases:**
+- RAG systems with tabular data
+- Bulk data transmission to LLMs
+- Prompt engineering with structured context
+- Token cost optimization for production systems
 
----
-
-## 🚀 New in v0.4.0
-
-### Nested Objects Support
-Handle complex data structures with full round-trip support:
-
-```javascript
-const data = [{
-  id: 1,
-  user: {
-    name: "Alice",
-    email: "alice@example.com",
-    age: 25
-  },
-  tags: ["developer", "typescript"],
-  settings: {
-    theme: "dark",
-    notifications: true
-  }
-}];
-
-jsonToTonl(data, "users");
-// users[1]{id:i8,user:obj,tags:arr,settings:obj}:
-//   1, {name:Alice,email:alice@example.com,age:25}, [developer,typescript], {theme:dark,notifications:true}
-```
-
-**Savings:** 16-17% on nested data (lossless!)
-
-### Batch Processing
-Convert multiple files at once:
-
-```bash
-tonl batch "data/*.json" -s
-# 📦 Found 150 file(s)
-# ✅ user-1.json → user-1.tonl (45% savings)
-# ✅ user-2.json → user-2.tonl (42% savings)
-# 📊 Results: 150 succeeded, 0 failed
-```
-
-### Watch Mode
-Auto-convert files on change:
-
-```bash
-tonl watch "data/*.json" --name users
-# 👀 Watching 50 file(s)...
-# 🔄 user-1.json changed - converting...
-# ✅ Converted: user-1.json → user-1.tonl
-```
-
----
-
-## The Problem
-
-When sending structured data to LLMs, JSON is verbose:
-```json
-[
-  {
-    "id": 1,
-    "name": "Alice",
-    "age": 25,
-    "active": true
-  },
-  {
-    "id": 2,
-    "name": "Bob",
-    "age": 30,
-    "active": false
-  }
-]
-```
-
-**56 tokens** (GPT-5 tokenizer) 💸
-
-## The Solution
-
-TONL format is compact and structured:
-```tonl
-data[2]{id:i8,name:str,age:i8,active:bool}:
-  1, Alice, 25, true
-  2, Bob, 30, false
-```
-
-**37 tokens** ✅
-
-**Result: 33.9% token savings!**
-
----
-
-## Key Features
-
-✅ **Bidirectional Conversion**
-- JSON ↔ TONL with lossless round-trip
-- YAML ↔ TONL for configuration files
-- Nested objects with full preservation
-- Schema validation across all objects
-
-✅ **Extended Type System**
-- Integers: `i8`, `i16`, `i32`, `i64` (automatic optimization)
-- Floats: `f32`, `f64`
-- Special: `date`, `datetime`, `obj`, `arr`
-- Automatic type detection and smallest type selection
-
-✅ **Real Token Counting**
-- Integrated tokenizer with 2025 AI models (js-tiktoken)
-- Accurate token statistics (not estimation!)
-- Support for GPT-5, Claude 4, Gemini 2.5, and more
-
-✅ **Production Ready**
-- 79/79 unit tests passing
-- Full TypeScript support
-- Streaming API for large files (>10MB)
-- Error handling with detailed messages
-- CI/CD with GitHub Actions
-- 64% test coverage
-
-✅ **Developer Experience**
-- Batch processing for multiple files
-- Watch mode for real-time conversion
-- Progress bars for large datasets
-- Multiple tokenizer models
-- Schema validation flag
+**Not suitable for:**
+- Single objects or very small datasets (1-5 items)
+- Highly heterogeneous data with inconsistent schemas
+- Systems requiring standard JSON output
 
 ---
 
 ## Installation
-
-### Global (CLI)
 ```bash
+# Global installation
 npm install -g tonl-mcp-bridge
-```
 
-### Local (Library)
-```bash
+# Local installation
 npm install tonl-mcp-bridge
 ```
 
 ---
 
-## CLI Usage
+## Quick Start
 
 ### Basic Conversion
+```typescript
+import { jsonToTonl, tonlToJson } from 'tonl-mcp-bridge';
+
+const users = [
+  { id: 1, name: "Alice", age: 25 },
+  { id: 2, name: "Bob", age: 30 }
+];
+
+const tonl = jsonToTonl(users, "users");
+// users[2]{id:i8,name:str,age:i8}:
+//   1, Alice, 25
+//   2, Bob, 30
+
+const json = tonlToJson(tonl);
+// Round-trip conversion preserves data
+```
+
+### Token Statistics
+```typescript
+import { calculateRealSavings } from 'tonl-mcp-bridge';
+
+const jsonStr = JSON.stringify(users);
+const tonlStr = jsonToTonl(users);
+const stats = calculateRealSavings(jsonStr, tonlStr, 'gpt-5');
+
+console.log(`Token reduction: ${stats.savingsPercent}%`);
+console.log(`Tokens saved: ${stats.savedTokens}`);
+```
+
+---
+
+## Performance Characteristics
+
+### Token Savings by Dataset Size
+
+| Dataset Size | JSON Tokens | TONL Tokens | Savings | Recommendation |
+|--------------|-------------|-------------|---------|----------------|
+| 1 object | 18 | 23 | -27.8% | Use JSON |
+| 2 objects | 56 | 37 | 33.9% | Marginal |
+| 10 objects | 280 | 165 | 41.1% | Use TONL |
+| 100 objects | 2,800 | 1,450 | 48.2% | Use TONL |
+| 1000 objects | 28,000 | 14,000 | 50.0% | Use TONL |
+
+*Benchmarks using GPT-5 tokenizer with consistent schema*
+
+### When TONL is Effective
+
+**Optimal conditions:**
+- 10 or more objects with consistent schema
+- Tabular or list-based data structures
+- Repetitive key names across objects
+- Token cost is a significant operational expense
+
+**Suboptimal conditions:**
+- Single objects (header overhead exceeds savings)
+- Inconsistent schemas (reduces compression efficiency)
+- Deeply nested or complex object hierarchies
+- Small datasets (1-5 objects)
+
+---
+
+## CLI Usage
+
+### File Conversion
 ```bash
-# JSON → TONL
+# Convert single file
 tonl convert data.json
 
-# With real token statistics
+# Convert with statistics
 tonl convert data.json -s
+
+# Specify output location
+tonl convert data.json output.tonl
+
+# Custom collection name
+tonl convert data.json --name users
 ```
 
-**Output:**
-```
-📄 Converting JSON → TONL...
-✅ Converted successfully!
-📁 Output: data.tonl
-
-📊 Token Statistics (GPT 5 Tokenizer):
-   Input:  56 tokens
-   Output: 37 tokens
-   Saved:  19 tokens (33.9%)
-```
-
-### Batch Processing
+### Batch Operations
 ```bash
 # Convert multiple files
+tonl batch "data/*.json"
+
+# With statistics
 tonl batch "data/*.json" -s
 
-# With custom collection name
-tonl batch "users/*.json" --name users -s
-
-# To specific output directory
-tonl batch "*.json" -o ./output -s
+# Custom output directory
+tonl batch "*.json" -o ./output
 ```
 
 ### Watch Mode
 ```bash
-# Watch for changes
+# Auto-convert on file changes
 tonl watch "data/*.json"
 
 # With options
-tonl watch "*.json" --name users -o ./output
+tonl watch "*.json" --name collection -o ./output
 ```
 
-### Advanced Options
+### Tokenizer Models
 ```bash
-# Choose tokenizer model
+# Specify tokenizer model
 tonl convert data.json -s --model claude-4
 tonl convert data.json -s --model gemini-2.5
-
-# Validate schema consistency
-tonl convert data.json --validate
-
-# Custom collection name
-tonl convert users.json --name users
-
-# Combine flags
-tonl convert large-data.json -s -m gpt-5 --validate
 ```
 
-**Available models:**
+**Supported models:**
 - `gpt-5` (default)
 - `gpt-4`, `gpt-3.5-turbo`
 - `claude-4-opus`, `claude-4-sonnet`, `claude-sonnet-4.5`
@@ -227,171 +152,160 @@ tonl convert large-data.json -s -m gpt-5 --validate
 
 ---
 
-## Programmatic Usage
+## API Reference
 
-### JSON → TONL (Simple)
+### Core Functions
+
+#### jsonToTonl
 ```typescript
-import { jsonToTonl } from 'tonl-mcp-bridge';
-
-const users = [
-  { id: 1, name: "Alice", score: 19.99 },
-  { id: 2, name: "Bob", score: 25.50 }
-];
-
-const tonl = jsonToTonl(users, "users");
-// users[2]{id:i8,name:str,score:f32}:
-//   1, Alice, 19.99
-//   2, Bob, 25.5
+function jsonToTonl(
+  data: Record<string, unknown>[],
+  name?: string,
+  options?: ConvertOptions
+): string
 ```
 
-### Nested Objects
+Converts array of objects to TONL format.
+
+**Parameters:**
+- `data` - Array of objects with consistent schema
+- `name` - Collection name (default: "data")
+- `options` - Conversion options
+  - `flattenNested` - Flatten nested objects (default: false)
+
+**Returns:** TONL formatted string
+
+**Throws:** Error if data is not an array or schema validation fails
+
+#### tonlToJson
 ```typescript
-import { jsonToTonl } from 'tonl-mcp-bridge';
-
-const data = [{
-  id: 1,
-  user: { name: "Alice", email: "alice@example.com" },
-  tags: ["dev", "typescript"]
-}];
-
-// Keep nested structure
-const tonlNested = jsonToTonl(data);
-// data[1]{id:i8,user:obj,tags:arr}:
-//   1, {name:Alice,email:alice@example.com}, [dev,typescript]
-
-// Or flatten
-const tonlFlat = jsonToTonl(data, 'data', { flattenNested: true });
-// data[1]{id:i8,user_name:str,user_email:str,tags:arr}:
-//   1, Alice, alice@example.com, [dev,typescript]
+function tonlToJson(tonl: string): Record<string, unknown>[]
 ```
 
-### TONL → JSON
+Parses TONL format back to JSON array.
+
+**Parameters:**
+- `tonl` - TONL formatted string
+
+**Returns:** Array of objects
+
+**Throws:** `TonlParseError` if format is invalid
+
+#### calculateRealSavings
 ```typescript
-import { tonlToJson } from 'tonl-mcp-bridge';
-
-const tonl = `users[2]{id:i8,name:str,profile:obj}:
-  1, Alice, {email:alice@example.com,age:25}
-  2, Bob, {email:bob@example.com,age:30}`;
-
-const json = tonlToJson(tonl);
-// [
-//   { id: 1, name: "Alice", profile: { email: "alice@example.com", age: 25 } },
-//   { id: 2, name: "Bob", profile: { email: "bob@example.com", age: 30 } }
-// ]
+function calculateRealSavings(
+  jsonStr: string,
+  tonlStr: string,
+  model: ModelName
+): TokenSavings
 ```
 
-### Real Token Counting
+Calculates token savings using real tokenizer.
+
+**Parameters:**
+- `jsonStr` - JSON string
+- `tonlStr` - TONL string
+- `model` - Tokenizer model name
+
+**Returns:**
 ```typescript
-import { calculateRealSavings } from 'tonl-mcp-bridge';
-
-const jsonStr = JSON.stringify(data);
-const tonlStr = jsonToTonl(data);
-
-const savings = calculateRealSavings(jsonStr, tonlStr, 'gpt-5');
-
-console.log(`Original: ${savings.originalTokens} tokens`);
-console.log(`TONL: ${savings.compressedTokens} tokens`);
-console.log(`Saved: ${savings.savedTokens} tokens (${savings.savingsPercent}%)`);
+interface TokenSavings {
+  originalTokens: number;
+  compressedTokens: number;
+  savedTokens: number;
+  savingsPercent: number;
+}
 ```
 
-### YAML Conversion
+### YAML Support
 ```typescript
 import { yamlToTonl, tonlToYaml } from 'tonl-mcp-bridge';
 
 const yamlStr = `
-- role: storyteller
-  context: fantasy
-  tone: dramatic
+- role: assistant
+  context: technical
+  tone: professional
 `;
 
 const tonl = yamlToTonl(yamlStr, 'prompts');
-const yaml = tonlToYaml(tonl); // Round-trip
+const yaml = tonlToYaml(tonl);
 ```
 
----
-
-## When to Use TONL
-
-### ✅ TONL Works Best For:
-
-- **10+ similar objects** with consistent schema
-- **Tabular data** (user lists, transactions, logs)
-- **Large datasets** (100s-1000s of items)
-- **Repetitive structures** (same keys repeated)
-- **Nested objects** (with round-trip preservation)
-
-### ❌ Don't Use TONL For:
-
-- **Single objects** (header overhead)
-- **1-5 items** (minimal savings)
-- **Highly varied schemas** (different keys per object)
-
-### Real Benchmarks (GPT-5 Tokenizer)
-
-| Items | JSON Tokens | TONL Tokens | Savings |
-|-------|-------------|-------------|---------|
-| 1     | 18          | 23          | -27.8% ❌ |
-| 2     | 56          | 37          | 33.9% ✅ |
-| 10    | 280         | 165         | 41.1% ✅ |
-| 100   | 2,800       | 1,450       | 48.2% 🔥 |
-| 1000  | 28,000      | 14,000      | 50.0% 🔥 |
-
-**Sweet spot: 10+ items with consistent schema**
-
----
-
-## Architecture
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                    TONL-MCP Bridge                      │
-├─────────────────────────────────────────────────────────┤
-│                                                         │
-│  Input Formats          Core Engine        Output       │
-│  ┌──────────┐          ┌──────────┐      ┌──────────┐   │
-│  │   JSON   │──────────│  Type    │──────│  TONL    │   │
-│  │   YAML   │          │ Detector │      │  Format  │   │
-│  └──────────┘          └──────────┘      └──────────┘   │
-│       │                     │                  │        │
-│       │                ┌──────────┐            │        │
-│       └────────────────│ Schema   │────────────┘        │
-│                        │Validator │                     │
-│                        └──────────┘                     │
-│                             │                           │
-│                        ┌──────────┐                     │
-│                        │Tokenizer │                     │
-│                        │(GPT-5/   │                     │
-│                        │Claude 4) │                     │
-│                        └──────────┘                     │
-│                                                         │
-│  Features:                                              │
-│  • Nested Objects (v0.4.0)                              │
-│  • Batch Processing                                     │
-│  • Watch Mode                                           │
-│  • Streaming (>10MB files)                              │
-│  • 79 Unit Tests                                        │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
-```
-
----
-
-## Extended Type System
-
-TONL automatically optimizes number types:
+### Nested Objects
 ```typescript
-{ id: 1 }         → i8   (1 byte, -128 to 127)
-{ id: 1000 }      → i16  (2 bytes, -32K to 32K)
-{ id: 100000 }    → i32  (4 bytes, -2B to 2B)
-{ price: 19.99 }  → f32  (32-bit float)
-{ created: "2024-01-15" } → date
-{ user: {...} }   → obj  (nested object)
-{ tags: [...] }   → arr  (array)
+const data = [{
+  id: 1,
+  user: { name: "Alice", email: "alice@example.com" },
+  tags: ["developer", "typescript"]
+}];
+
+// Preserve nested structure
+const tonl = jsonToTonl(data);
+// data[1]{id:i8,user:obj,tags:arr}:
+//   1, {name:Alice,email:alice@example.com}, [developer,typescript]
+
+// Flatten nested objects
+const tonlFlat = jsonToTonl(data, 'data', { flattenNested: true });
+// data[1]{id:i8,user_name:str,user_email:str,tags:arr}:
+//   1, Alice, alice@example.com, [developer,typescript]
 ```
 
-**Why?** Smaller types = fewer characters = fewer tokens!
+---
 
-**Supported Types:**
+## MCP Server (v0.5.0)
+
+TONL-MCP Bridge includes a Model Context Protocol server for integration with AI assistants.
+
+### Starting the Server
+```bash
+# Start MCP server
+npm run mcp:start
+
+# Or using the binary
+tonl-mcp-server
+```
+
+### Available Tools
+
+The MCP server exposes three tools:
+
+1. **convert_to_tonl** - Convert JSON data to TONL format
+2. **parse_tonl** - Parse TONL back to JSON
+3. **calculate_savings** - Calculate token savings statistics
+
+### Claude Desktop Integration
+
+Add to `claude_desktop_config.json`:
+```json
+{
+  "mcpServers": {
+    "tonl": {
+      "command": "node",
+      "args": ["/path/to/tonl-mcp-bridge/dist/mcp/index.js"]
+    }
+  }
+}
+```
+
+### Testing with MCP Inspector
+```bash
+npx @modelcontextprotocol/inspector node dist/mcp/index.js
+```
+
+---
+
+## Type System
+
+TONL automatically selects optimal numeric types:
+```typescript
+{ id: 1 }         // i8  (1 byte, -128 to 127)
+{ id: 1000 }      // i16 (2 bytes, -32,768 to 32,767)
+{ id: 100000 }    // i32 (4 bytes, -2B to 2B)
+{ price: 19.99 }  // f32 (32-bit float)
+{ score: 3.14159265359 } // f64 (64-bit float)
+```
+
+**Supported types:**
 - Integers: `i8`, `i16`, `i32`, `i64`
 - Floats: `f32`, `f64`
 - Strings: `str`
@@ -400,123 +314,101 @@ TONL automatically optimizes number types:
 
 ---
 
-## Real-World Example
-
-**Scenario:** Sending user data to LLM for analysis
-```json
-// users.json (100 users with nested profiles)
-[
-  {
-    "id": 1,
-    "name": "Alice Johnson",
-    "profile": {
-      "email": "alice@example.com",
-      "age": 25,
-      "verified": true
-    },
-    "tags": ["developer", "typescript"],
-    "created": "2024-01-15"
-  },
-  // ... 99 more
-]
+## Architecture
+```
+Input Formats          Core Engine           Output
+┌──────────┐          ┌──────────┐          ┌──────────┐
+│   JSON   │─────────▶│   Type   │─────────▶│   TONL   │
+│   YAML   │          │ Detector │          │  Format  │
+└──────────┘          └──────────┘          └──────────┘
+                           │
+                      ┌──────────┐
+                      │  Schema  │
+                      │Validator │
+                      └──────────┘
+                           │
+                      ┌──────────┐
+                      │Tokenizer │
+                      │ (Real)   │
+                      └──────────┘
 ```
 
-**Results:**
-- JSON: ~3,200 tokens
-- TONL (nested): ~1,600 tokens
-- **Savings: 50%** (1,600 tokens)
-
-**Cost Impact (GPT-4 pricing):**
-- Input: $0.03 per 1K tokens
-- 1,600 tokens saved = **$0.048 per request**
-- At 1000 requests/day = **$48/day = $1,440/month saved** 💰
+**Core components:**
+- Type detection and optimization
+- Schema validation across all objects
+- Real tokenizer integration (js-tiktoken)
+- Bidirectional conversion with data preservation
+- Streaming support for large files
 
 ---
 
 ## Development
 
+### Setup
 ```bash
-# Clone
 git clone https://github.com/kryptomrx/tonl-mcp-bridge.git
 cd tonl-mcp-bridge
-
-# Install
 npm install
+```
 
-# Test
+### Testing
+```bash
+# Run tests
 npm test
 
-# Coverage
+# Watch mode
+npm run test:watch
+
+# Coverage report
 npm run test:coverage
+```
 
-# Build
+### Building
+```bash
 npm run build
+```
 
-# Test CLI
-npm run cli convert test.json -s
-npm run cli batch "test*.json" -s
-npm run cli watch "test*.json"
+### Code Quality
+```bash
+# Linting
+npm run lint
+
+# Formatting
+npm run format
 ```
 
 ---
 
 ## Roadmap
 
-### ✅ v0.4.0 (Current)
-- [x] Nested objects support with lossless round-trip
-- [x] Batch processing (`tonl batch *.json`)
-- [x] Watch mode (`tonl watch *.json`)
-- [x] 79 unit tests
-- [x] 64% test coverage
-- [x] Flatten option for nested objects
+### v0.5.0 (Current)
+- MCP Server implementation
+- Three MCP tools (convert, parse, calculate)
+- 90 unit tests
+- MCP Inspector compatibility
 
-### 🚧 v0.5.0 (Q1 2025)
-- [ ] MCP Server implementation
-- [ ] LangChain/LlamaIndex integration
-- [ ] Performance benchmarks
-- [ ] 90% test coverage
-- [ ] Express/Fastify middleware
+### v0.6.0 (Q1 2025)
+- SDK architecture
+- Database adapters foundation
+- Enhanced type system
+- Performance benchmarks
 
-### 💎 v1.0.0 (Q2 2025)
-- [ ] 100% test coverage
-- [ ] Documentation site
-- [ ] Architecture diagrams
-- [ ] Video tutorials
-- [ ] Community examples
-- [ ] Production optimization
+### v0.7.0 (Q2 2025)
+- SQL database adapters (PostgreSQL, MySQL, SQLite)
+- Vector database adapters (Milvus, Weaviate, Pinecone, Qdrant)
+- Advanced query optimization
 
----
-
-## Tech Stack
-
-- **TypeScript 5.3** - Type safety
-- **Vitest** - Fast testing (79 tests)
-- **js-tiktoken** - Real tokenizer for GPT-5, Claude, Gemini
-- **Commander.js** - CLI framework
-- **js-yaml** - YAML parsing
-- **chokidar** - File watching
-- **glob** - Pattern matching
-- **Node.js 18+** - Modern runtime
+### v1.0.0 (Q3 2025)
+- Production hardening
+- Comprehensive documentation
+- Performance optimization
+- Stability guarantees
 
 ---
 
-## Contributing
+## Performance Benchmarks
 
-Contributions welcome! Please:
-
-1. Fork the repo
-2. Create feature branch (`git checkout -b feature/cool-thing`)
-3. Commit changes (`git commit -m 'Add cool thing'`)
-4. Push (`git push origin feature/cool-thing`)
-5. Open Pull Request
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
-
----
-
-## Performance
-
-**Benchmarks (100 objects, nested structure):**
+**Operation benchmarks (100 objects, nested structure):**
 
 | Operation | Time | Throughput |
 |-----------|------|------------|
@@ -525,7 +417,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 | Streaming (10MB) | 145ms | 68 MB/sec |
 | Batch (50 files) | 89ms | 561 files/sec |
 
-**Memory Usage:**
+**Memory usage:**
 - Small files (<1MB): ~15MB
 - Large files (10MB+): Streaming mode (~50MB peak)
 
@@ -533,29 +425,43 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 ## Known Limitations
 
-- **Single objects:** May not save tokens (header overhead)
-- **Very small datasets:** JSON might be smaller (use benchmarks)
-- **Watch mode:** Requires file system access (not available in browser)
+1. **Header overhead** - Single objects incur net token increase due to schema header
+2. **Schema consistency** - Optimal performance requires consistent object structure
+3. **Parsing requirement** - Receiving system must support TONL format
+4. **Browser compatibility** - Watch mode requires Node.js file system access
+5. **Numeric precision** - Float type selection may affect precision in edge cases
+
+---
+
+## Contributing
+
+Contributions are welcome. Please:
+
+1. Fork the repository
+2. Create a feature branch
+3. Write tests for new functionality
+4. Ensure all tests pass
+5. Submit pull request with clear description
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
 
 ---
 
 ## License
 
-MIT © [kryptomrx](https://github.com/kryptomrx)
+MIT License - see [LICENSE](LICENSE) file for details
 
 ---
 
 ## Links
 
-- **npm:** https://www.npmjs.com/package/tonl-mcp-bridge
-- **GitHub:** https://github.com/kryptomrx/tonl-mcp-bridge
-- **Issues:** https://github.com/kryptomrx/tonl-mcp-bridge/issues
-- **Changelog:** [CHANGELOG.md](CHANGELOG.md)
+- [npm package](https://www.npmjs.com/package/tonl-mcp-bridge)
+- [GitHub repository](https://github.com/kryptomrx/tonl-mcp-bridge)
+- [Issue tracker](https://github.com/kryptomrx/tonl-mcp-bridge/issues)
+- [Changelog](CHANGELOG.md)
 
 ---
 
-**Saved you money? Give it a ⭐ on GitHub!**
+## Support
 
-**Need help?** Open an issue or start a discussion!
-
-**Want to contribute?** PRs welcome! 🚀
+For bugs and feature requests, please use the GitHub issue tracker. For general questions, start a discussion in the repository.

@@ -1,12 +1,13 @@
 {
   "name": "tonl-mcp-bridge",
-  "version": "0.4.0",
-  "description": "Reduce LLM token costs by 30-60% with TONL format. TypeScript library & CLI for bidirectional JSON/YAML ↔ TONL conversion with real GPT-4 tokenizer.",
+  "version": "0.5.0",
+  "description": "Reduce LLM token costs by 30-60% with TONL format. TypeScript library & CLI with MCP Server for bidirectional JSON/YAML ↔ TONL conversion.",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "type": "module",
   "bin": {
-    "tonl": "dist/cli/index.js"
+    "tonl": "dist/cli/index.js",
+    "tonl-mcp-server": "dist/mcp/index.js"
   },
   "files": [
     "dist",
@@ -20,6 +21,7 @@
     "test:watch": "vitest",
     "prepublishOnly": "npm run build && npm test",
     "cli": "npm run build && node dist/cli/index.js",
+    "mcp:start": "npm run build && node dist/mcp/index.js",
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix",
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
@@ -31,6 +33,8 @@
     "llm",
     "ai",
     "mcp",
+    "mcp-server",
+    "model-context-protocol",
     "rag",
     "json",
     "yaml",

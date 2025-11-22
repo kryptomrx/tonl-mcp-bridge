@@ -27,3 +27,15 @@ export { estimateTokens, calculateSavings } from './utils/token-counter.js';
 export { countTokens, calculateRealSavings, type ModelName } from './utils/tokenizer.js';
 // Types
 export type { TypeName } from './core/type-detector.js';
+
+// MCP Server
+export {
+  TonlMcpServer,
+  createTonlMcpServer,
+  type McpServerConfig,
+  type ToolResponse,
+  type ConvertToTonlInput,
+  type ParseTonlInput,
+  type ValidateSchemaInput,
+  type CalculateSavingsInput,
+} from './mcp/index-exports.js';

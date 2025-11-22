@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2025-11-21
+
+### Added
+- **MCP Server**: Full Model Context Protocol server implementation
+- **MCP Tools**: Three tools for AI assistants (convert_to_tonl, parse_tonl, calculate_savings)
+- **MCP Inspector support**: Test tools via official MCP Inspector
+- **stdio transport**: Standard MCP communication protocol
+- **Zod validation**: Input validation for all MCP tools
+- **90 unit tests**: Added 11 new tests for MCP functionality
+
+### Changed
+- Test suite expanded from 79 to 90 tests
+- Added MCP server exports to main package
+- Updated package.json with mcp:start script and tonl-mcp-server binary
+
+### Technical
+- New binary: `tonl-mcp-server` for starting MCP server
+- New script: `npm run mcp:start`
+- Server runs on stdio transport for MCP compatibility
+- Integration tested with MCP Inspector
+
 ## [0.4.0] - 2025-11-20
 ### Added
 - Nested objects support with lossless round-trip
