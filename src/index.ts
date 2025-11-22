@@ -39,3 +39,14 @@ export {
   type ValidateSchemaInput,
   type CalculateSavingsInput,
 } from './mcp/index-exports.js';
+
+// SDK
+export {
+  BaseAdapter,
+  PostgresAdapter,
+  DatabaseError,
+  type DatabaseConfig,
+  type QueryResult,
+  type TonlResult,
+  type StatsResult,
+} from './sdk/index.js';

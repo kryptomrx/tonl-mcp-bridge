@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: tonl-sdk-demo
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: tonl_user
+      POSTGRES_PASSWORD: tonl_demo_2024
+      POSTGRES_DB: tonl_demo
+    ports:
+      - "5434:5432"
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tonl_user -d tonl_demo"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  postgres_data:

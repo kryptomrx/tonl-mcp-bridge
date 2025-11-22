@@ -1,0 +1,45 @@
+export interface DatabaseConfig {
+  host: string;
+  port?: number;
+  database: string;
+  user: string;
+  password: string;
+}
+
+export interface QueryResult<T = unknown> {
+  data: T[];
+  rowCount: number;
+}
+
+export interface TonlResult {
+  tonl: string;
+  data: unknown[];
+  rowCount: number;
+}
+
+export interface StatsResult extends TonlResult {
+  stats: {
+    originalTokens: number;
+    compressedTokens: number;
+    savedTokens: number;
+    savingsPercent: number;
+  };
+}
+
+export type ModelName =
+  | 'gpt-5'
+  | 'gpt-4'
+  | 'claude-4-opus'
+  | 'claude-4-sonnet'
+  | 'gemini-2.5-pro';
+
+export class DatabaseError extends Error {
+  constructor(
+    message: string,
+    public query?: string,
+    public originalError?: Error
+  ) {
+    super(message);
+    this.name = 'DatabaseError';
+  }
+}

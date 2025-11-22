@@ -33,3 +33,12 @@ coverage/
 tmp/
 temp/
 *.backup*
+
+# SDK Examples mit credentials
+examples/*-live.ts
+examples/*-demo.ts
+examples/*.local.ts
+# SDK examples with credentials
+examples/*-live.ts
+examples/*-demo.ts
+examples/*.local.ts
