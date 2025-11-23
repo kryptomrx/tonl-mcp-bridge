@@ -4,12 +4,14 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    include: ['tests/**/*.test.ts'],  // ← ADD THIS!
+    include: ['tests/**/*.test.ts', 'tests/**/*.spec.ts'],
     exclude: [
-      'node_modules/**',
-      'dist/**',
-      'examples/**',
-      '**/*.d.ts'
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/examples/**',
+      '**/*.example.ts',
+      '**/*.d.ts',
+      '**/*.config.ts'
     ],
     coverage: {
       provider: 'v8',
@@ -20,6 +22,7 @@ export default defineConfig({
         'examples/**',
         '**/*.d.ts',
         '**/*.config.*',
+        '**/*.example.ts',
         '**/mockData.ts'
       ]
     }
