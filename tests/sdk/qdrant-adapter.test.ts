@@ -1,10 +1,9 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { QdrantAdapter } from '../../src/sdk/vector/qdrant.js';
 
-// Skip tests if no Qdrant available
-const skipTests = !process.env.QDRANT_URL && !process.env.CI;
+const QDRANT_AVAILABLE = !!process.env.QDRANT_URL;
 
-describe.skipIf(skipTests)('QdrantAdapter', () => {
+describe.skipIf(!QDRANT_AVAILABLE)('QdrantAdapter', () => {
   let adapter: QdrantAdapter;
   const testCollection = 'test_collection_' + Date.now();
 
@@ -91,7 +90,7 @@ describe.skipIf(skipTests)('QdrantAdapter', () => {
     });
 
     expect(result.data.length).toBeGreaterThan(0);
-    expect(result.data.every((item: any) => item.country === 'Germany')).toBe(true);
+    expect(result.data.every((item: any) => item.payload?.country === 'Germany')).toBe(true);
   });
 
   it('should delete collection', async () => {
