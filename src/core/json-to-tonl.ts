@@ -189,7 +189,7 @@ export function jsonToTonl(
 
           return formatValue(value);
         });
-        return '  ' + values.join(', ');
+        return values.join(',');
       } catch (error) {
         throw new TonlSchemaError(`Error formatting row ${index + 1}`, {
           row: index + 1,
