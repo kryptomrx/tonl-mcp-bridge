@@ -72,3 +72,14 @@ export interface BatchOptions {
   model?: ModelName;
   parallel?: boolean; // default: true
 }
+
+// Query Analysis
+export interface QueryAnalysis {
+  estimatedRows: number;
+  estimatedJsonTokens: number;
+  estimatedTonlTokens: number;
+  potentialSavings: number;
+  potentialSavingsPercent: number;
+  recommendation: 'use-tonl' | 'use-json' | 'marginal';
+  costImpact: string;
+}

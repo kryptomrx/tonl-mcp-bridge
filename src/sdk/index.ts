@@ -8,6 +8,10 @@ export type {
   TonlResult,
   StatsResult,
   ModelName,
+  BatchQuery,
+  BatchTonlResult,
+  BatchStatsResult,
+  BatchOptions,
 } from './adapters/types.js';
 export { DatabaseError } from './adapters/types.js';
 
@@ -18,3 +22,8 @@ export type {
   QdrantConfig,
   VectorSearchOptions,
 } from './vector/types.js';
+export type {
+  VectorQueryResult,
+  VectorTonlResult,
+  VectorStatsResult,
+} from './vector/qdrant.js';

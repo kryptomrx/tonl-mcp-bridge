@@ -8,7 +8,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)](https://www.typescriptlang.org/)
 [![License](https://img.shields.io/npm/l/tonl-mcp-bridge.svg)](https://github.com/kryptomrx/tonl-mcp-bridge/blob/main/LICENSE)
 
-Token-optimized data format for LLMs. TypeScript library with database adapters (PostgreSQL, MySQL, SQLite), CLI tools, and MCP server.
+Token-optimized data format for LLMs. TypeScript library with database adapters (PostgreSQL, MySQL, SQLite, Qdrant), CLI tools, and MCP server.
 
 ```bash
 npm install tonl-mcp-bridge
@@ -324,16 +324,93 @@ await db.disconnect();
 - Automatic reconnection
 - Compatible with MySQL 5.7+ and MariaDB
 
-### Supported Databases
+### Qdrant (Vector Database)
 
-**v0.7.0:**
-- PostgreSQL ✅
-- SQLite ✅
-- MySQL ✅
+Vector search with TONL conversion for RAG systems.
 
-**Coming in v0.8.0:**
-- Qdrant (vector database)
-- More vector DBs: Milvus, Weaviate, Pinecone
+```typescript
+import { QdrantAdapter } from 'tonl-mcp-bridge';
+
+const db = new QdrantAdapter({
+  url: process.env.QDRANT_URL || 'http://localhost:6333',
+});
+
+await db.connect();
+
+// Create collection
+await db.createCollection('documents', 384);
+
+// Add vectors with metadata
+await db.upsert('documents', [
+  { 
+    id: 1, 
+    vector: embeddings, // Your 384-dimensional vector
+    payload: { title: 'Doc 1', category: 'tech' } 
+  },
+]);
+
+// Search with TONL conversion
+const result = await db.searchWithStats(
+  'documents',
+  queryVector,
+  { limit: 10, model: 'gpt-5' }
+);
+
+console.log(`Found ${result.rowCount} documents`);
+console.log(`Saved ${result.stats.savingsPercent}% tokens`);
+
+await db.disconnect();
+```
+
+**Features:**
+- Docker: `docker run -p 6333:6333 qdrant/qdrant`
+- Vector similarity search
+- Filter support
+- Payload metadata
+- TONL conversion for efficient RAG
+
+**Note:** Requires vector embeddings from models like OpenAI text-embedding-3, Cohere, or local alternatives.
+
+---
+
+### Batch Query Operations
+
+Execute multiple queries in parallel with aggregate statistics.
+
+```typescript
+import { PostgresAdapter } from 'tonl-mcp-bridge';
+
+const db = new PostgresAdapter(config);
+await db.connect();
+
+// Batch queries
+const result = await db.batchQueryWithStats([
+  { sql: 'SELECT * FROM users', name: 'users' },
+  { sql: 'SELECT * FROM products', name: 'products' },
+  { sql: 'SELECT * FROM orders', name: 'orders' },
+], { model: 'gpt-5' });
+
+console.log('Total queries:', result.aggregate.totalQueries);
+console.log('Total rows:', result.aggregate.totalRows);
+console.log('Total saved:', result.aggregate.savedTokens, 'tokens');
+console.log('Savings:', result.aggregate.savingsPercent + '%');
+
+// Individual results
+result.results.forEach((r, i) => {
+  console.log(`Query ${i + 1}: ${r.rowCount} rows, ${r.stats?.savingsPercent}% saved`);
+});
+```
+
+**Example results (3 queries, 25 rows):**
+- Original: 937 tokens
+- TONL: 487 tokens
+- Saved: 450 tokens (48%)
+
+**Works with:**
+- PostgreSQL
+- MySQL
+- SQLite
+- Parallel execution
 
 ---
 
@@ -567,17 +644,19 @@ npm run format    # Formatting
 ### ✅ v0.7.0 (Released 2025-11-23)
 - SQLite adapter with in-memory support
 - MySQL adapter with connection pooling
-- 145 tests (up from 92)
+- 145 tests
 - Ecosystem diagram
 
 ### 🚧 v0.8.0 (Q1 2025 - In Development)
 - Qdrant vector database adapter
-- Batch query operations
-- Documentation website
-- MCP streaming support
+- Batch query operations (48% savings)
+- 150 tests
+- Documentation website (planned)
+- MCP streaming support (planned)
 
 ### 💎 v0.9.0 (Q1 2025)
-- More vector DBs: Milvus, Weaviate, Pinecone
+- Query analyzer
+- More vector DBs (Milvus, Weaviate, Pinecone)
 - LangChain integration
 - LlamaIndex integration
 
