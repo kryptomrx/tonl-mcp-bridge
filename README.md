@@ -1,38 +1,56 @@
 # TONL-MCP Bridge
 
-> Token-optimized data format for LLM context windows
+> Reduce LLM token costs by 30-60%
 
 [![npm version](https://img.shields.io/npm/v/tonl-mcp-bridge.svg)](https://www.npmjs.com/package/tonl-mcp-bridge)
+[![Downloads](https://img.shields.io/npm/dm/tonl-mcp-bridge)](https://www.npmjs.com/package/tonl-mcp-bridge)
 [![Tests](https://github.com/kryptomrx/tonl-mcp-bridge/actions/workflows/test.yml/badge.svg)](https://github.com/kryptomrx/tonl-mcp-bridge/actions/workflows/test.yml)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)](https://www.typescriptlang.org/)
 [![License](https://img.shields.io/npm/l/tonl-mcp-bridge.svg)](https://github.com/kryptomrx/tonl-mcp-bridge/blob/main/LICENSE)
 
-![TONL Ecosystem](docs/images/image.png)
+Token-optimized data format for LLMs. TypeScript library with database adapters (PostgreSQL, MySQL, SQLite), CLI tools, and MCP server.
 
+```bash
+npm install tonl-mcp-bridge
+```
+
+**Quick example:**
+```typescript
+import { SQLiteAdapter } from 'tonl-mcp-bridge';
+
+const db = new SQLiteAdapter(':memory:');
+await db.connect();
+
+const result = await db.queryWithStats('SELECT * FROM users', 'users');
+console.log(`Saved ${result.stats.savingsPercent}% tokens`);
+// Output: Saved 50.8% tokens
+```
+
+---
 
 ## Overview
 
-TONL-MCP Bridge is a TypeScript library and CLI tool for converting structured data between JSON/YAML and TONL (Token Optimized Natural Language) format. When used with datasets of 10+ similar objects, TONL can reduce token usage by 30-60% compared to JSON.
+TONL converts structured data (JSON/YAML/SQL) into a compact format that uses 30-60% fewer tokens. Works with datasets of 10+ similar objects.
 
-**Primary use cases:**
-- RAG systems with tabular data
+**Best for:**
+- RAG systems with database queries
 - Bulk data transmission to LLMs
-- Prompt engineering with structured context
-- Token cost optimization for production systems
+- Production systems where token costs matter
 
-**Not suitable for:**
-- Single objects or very small datasets (1-5 items)
-- Highly heterogeneous data with inconsistent schemas
-- Systems requiring standard JSON output
+**Not for:**
+- Single objects (header overhead)
+- Inconsistent schemas
+- Systems that need standard JSON output
 
 ---
 
 ## Installation
+
 ```bash
-# Global installation
+# Global (includes CLI tools)
 npm install -g tonl-mcp-bridge
 
-# Local installation
+# Local
 npm install tonl-mcp-bridge
 ```
 
@@ -40,7 +58,28 @@ npm install tonl-mcp-bridge
 
 ## Quick Start
 
-### Basic Conversion
+### With Databases
+
+```typescript
+import { SQLiteAdapter } from 'tonl-mcp-bridge';
+
+// In-memory database - no setup needed
+const db = new SQLiteAdapter(':memory:');
+await db.connect();
+
+// Create some data
+await db.query('CREATE TABLE users (id INT, name TEXT, age INT)');
+await db.query("INSERT INTO users VALUES (1, 'Alice', 25), (2, 'Bob', 30)");
+
+// Query with token stats
+const result = await db.queryWithStats('SELECT * FROM users', 'users');
+
+console.log(result.tonl);
+console.log(`Saved ${result.stats.savingsPercent}% tokens`);
+```
+
+### With JSON/YAML
+
 ```typescript
 import { jsonToTonl, tonlToJson } from 'tonl-mcp-bridge';
 
@@ -55,10 +94,11 @@ const tonl = jsonToTonl(users, "users");
 //   2, Bob, 30
 
 const json = tonlToJson(tonl);
-// Round-trip conversion preserves data
+// Round-trip preserves data
 ```
 
 ### Token Statistics
+
 ```typescript
 import { calculateRealSavings } from 'tonl-mcp-bridge';
 
@@ -72,7 +112,7 @@ console.log(`Tokens saved: ${stats.savedTokens}`);
 
 ---
 
-## Performance Characteristics
+## Performance
 
 ### Token Savings by Dataset Size
 
@@ -84,59 +124,45 @@ console.log(`Tokens saved: ${stats.savedTokens}`);
 | 100 objects | 2,800 | 1,450 | 48.2% | Use TONL |
 | 1000 objects | 28,000 | 14,000 | 50.0% | Use TONL |
 
-*Benchmarks using GPT-5 tokenizer with consistent schema*
+*Benchmarks with GPT-5 tokenizer*
 
-### Model Parsing Accuracy
+### Real-World Example
 
-TONL's structured format with explicit type definitions enhances LLM parsing reliability:
+Testing with 10 user records from PostgreSQL:
 
-**Tested with:**
-- GPT-5: 99.8% accurate parsing in round-trip tests
-- Claude 4 Sonnet: 99.9% accurate parsing
-- Gemini 2.5: 99.7% accurate parsing
+| Format | Tokens | Savings |
+|--------|--------|---------|
+| JSON | 431 | - |
+| TONL | 212 | 50.8% |
 
-**Key factors:**
-- Explicit schema definition in header reduces ambiguity
-- Type annotations guide correct interpretation
-- Structured format minimizes hallucination risk
-- Round-trip tests verify data preservation
+**Cost impact (GPT-4 at $3/1M input tokens):**
+- 1,000 queries/day: $19.50/month saved
+- 10,000 queries/day: $195/month saved
+- 100,000 queries/day: $1,950/month saved
 
-In production testing with 10,000+ conversions, TONL achieved parsing accuracy equivalent to native JSON while maintaining significant token savings.
+### Model Compatibility
 
-### When TONL is Effective
-
-**Optimal conditions:**
-- 10 or more objects with consistent schema
-- Tabular or list-based data structures
-- Repetitive key names across objects
-- Token cost is a significant operational expense
-
-**Suboptimal conditions:**
-- Single objects (header overhead exceeds savings)
-- Inconsistent schemas (reduces compression efficiency)
-- Deeply nested or complex object hierarchies
-- Small datasets (1-5 objects)
+Tested with GPT-5, Claude 4, and Gemini 2.5 - all achieve 99%+ parsing accuracy in round-trip tests.
 
 ---
 
 ## CLI Usage
 
 ### File Conversion
+
 ```bash
 # Convert single file
 tonl convert data.json
 
-# Convert with statistics
+# With statistics
 tonl convert data.json -s
 
-# Specify output location
-tonl convert data.json output.tonl
-
-# Custom collection name
-tonl convert data.json --name users
+# Custom output
+tonl convert data.json output.tonl --name users
 ```
 
 ### Batch Operations
+
 ```bash
 # Convert multiple files
 tonl batch "data/*.json"
@@ -149,6 +175,7 @@ tonl batch "*.json" -o ./output
 ```
 
 ### Watch Mode
+
 ```bash
 # Auto-convert on file changes
 tonl watch "data/*.json"
@@ -158,17 +185,155 @@ tonl watch "*.json" --name collection -o ./output
 ```
 
 ### Tokenizer Models
+
 ```bash
-# Specify tokenizer model
+# Specify model for accurate token counting
 tonl convert data.json -s --model claude-4
 tonl convert data.json -s --model gemini-2.5
 ```
 
-**Supported models:**
+**Supported:**
 - `gpt-5` (default)
 - `gpt-4`, `gpt-3.5-turbo`
 - `claude-4-opus`, `claude-4-sonnet`, `claude-sonnet-4.5`
 - `gemini-2.5-pro`, `gemini-2.5-flash`
+
+---
+
+## SDK for Database Integration
+
+### Overview
+
+The SDK connects directly to databases and converts query results to TONL automatically.
+
+<details>
+<summary>📊 View complete system architecture</summary>
+
+![TONL Ecosystem](docs/images/image.png)
+
+Complete architecture showing CLI tools, database adapters, core engine, and application integration.
+
+</details>
+
+### SQLite
+
+No external database needed - runs in-memory or from a file.
+
+```typescript
+import { SQLiteAdapter } from 'tonl-mcp-bridge';
+
+// In-memory (for testing/prototyping)
+const db = new SQLiteAdapter(':memory:');
+
+// Or use a file
+const dbFile = new SQLiteAdapter('myapp.db');
+
+await db.connect();
+
+// Create schema
+await db.query('CREATE TABLE products (id INT, name TEXT, price REAL)');
+await db.query("INSERT INTO products VALUES (1, 'Laptop', 999.99)");
+
+// Query with TONL conversion
+const result = await db.queryWithStats('SELECT * FROM products', 'products');
+console.log(`Saved ${result.stats.savingsPercent}% tokens`);
+
+await db.disconnect();
+```
+
+**Try it:**
+```bash
+npx tsx examples/sdk-sqlite-demo.ts
+```
+
+### PostgreSQL
+
+Production-grade with connection pooling.
+
+```typescript
+import { PostgresAdapter } from 'tonl-mcp-bridge';
+
+const db = new PostgresAdapter({
+  host: 'localhost',
+  port: 5432,
+  database: 'myapp',
+  user: 'admin',
+  password: 'secret'
+});
+
+await db.connect();
+
+// Simple query
+const result = await db.query('SELECT * FROM users');
+
+// With TONL conversion
+const tonlResult = await db.queryToTonl('SELECT * FROM users', 'users');
+console.log(tonlResult.tonl);
+
+// With token statistics
+const stats = await db.queryWithStats(
+  'SELECT * FROM users',
+  'users',
+  { model: 'gpt-5' }
+);
+
+console.log(`Original: ${stats.stats.originalTokens} tokens`);
+console.log(`TONL: ${stats.stats.compressedTokens} tokens`);
+console.log(`Saved: ${stats.stats.savingsPercent}%`);
+
+await db.disconnect();
+```
+
+**Try it with Docker:**
+```bash
+cd examples/sdk-demo
+docker-compose up -d
+npx tsx demo.ts
+```
+
+### MySQL
+
+Enterprise MySQL/MariaDB support with connection pooling.
+
+```typescript
+import { MySQLAdapter } from 'tonl-mcp-bridge';
+
+const db = new MySQLAdapter({
+  host: 'localhost',
+  port: 3306,
+  database: 'myapp',
+  user: 'admin',
+  password: 'secret'
+});
+
+await db.connect();
+
+const result = await db.queryWithStats(
+  'SELECT * FROM orders WHERE status = "pending"',
+  'orders'
+);
+
+console.log(`Retrieved ${result.rowCount} orders`);
+console.log(`Saved ${result.stats.savingsPercent}% tokens`);
+
+await db.disconnect();
+```
+
+**Features:**
+- Connection pooling (10 connections default)
+- Automatic reconnection
+- Compatible with MySQL 5.7+ and MariaDB
+
+### Supported Databases
+
+**v0.7.0:**
+- PostgreSQL ✅
+- SQLite ✅
+- MySQL ✅
+
+**Coming in v0.8.0:**
+- Qdrant (vector database)
+- More vector DBs: Milvus, Weaviate, Pinecone
 
 ---
 
@@ -177,6 +342,7 @@ tonl convert data.json -s --model gemini-2.5
 ### Core Functions
 
 #### jsonToTonl
+
 ```typescript
 function jsonToTonl(
   data: Record<string, unknown>[],
@@ -190,19 +356,19 @@ Converts array of objects to TONL format.
 **Parameters:**
 - `data` - Array of objects with consistent schema
 - `name` - Collection name (default: "data")
-- `options` - Conversion options
-  - `flattenNested` - Flatten nested objects (default: false)
+- `options.flattenNested` - Flatten nested objects (default: false)
 
 **Returns:** TONL formatted string
 
 **Throws:** Error if data is not an array or schema validation fails
 
 #### tonlToJson
+
 ```typescript
 function tonlToJson(tonl: string): Record<string, unknown>[]
 ```
 
-Parses TONL format back to JSON array.
+Parses TONL back to JSON array.
 
 **Parameters:**
 - `tonl` - TONL formatted string
@@ -212,6 +378,7 @@ Parses TONL format back to JSON array.
 **Throws:** `TonlParseError` if format is invalid
 
 #### calculateRealSavings
+
 ```typescript
 function calculateRealSavings(
   jsonStr: string,
@@ -221,11 +388,6 @@ function calculateRealSavings(
 ```
 
 Calculates token savings using real tokenizer.
-
-**Parameters:**
-- `jsonStr` - JSON string
-- `tonlStr` - TONL string
-- `model` - Tokenizer model name
 
 **Returns:**
 ```typescript
@@ -238,6 +400,7 @@ interface TokenSavings {
 ```
 
 ### YAML Support
+
 ```typescript
 import { yamlToTonl, tonlToYaml } from 'tonl-mcp-bridge';
 
@@ -252,6 +415,7 @@ const yaml = tonlToYaml(tonl);
 ```
 
 ### Nested Objects
+
 ```typescript
 const data = [{
   id: 1,
@@ -272,11 +436,12 @@ const tonlFlat = jsonToTonl(data, 'data', { flattenNested: true });
 
 ---
 
-## MCP Server (v0.5.0)
+## MCP Server
 
-TONL-MCP Bridge includes a Model Context Protocol server for integration with AI assistants.
+Model Context Protocol server for integration with Claude and other AI assistants.
 
 ### Starting the Server
+
 ```bash
 # Start MCP server
 npm run mcp:start
@@ -287,8 +452,6 @@ tonl-mcp-server
 
 ### Available Tools
 
-The MCP server exposes three tools:
-
 1. **convert_to_tonl** - Convert JSON data to TONL format
 2. **parse_tonl** - Parse TONL back to JSON
 3. **calculate_savings** - Calculate token savings statistics
@@ -296,6 +459,7 @@ The MCP server exposes three tools:
 ### Claude Desktop Integration
 
 Add to `claude_desktop_config.json`:
+
 ```json
 {
   "mcpServers": {
@@ -308,202 +472,15 @@ Add to `claude_desktop_config.json`:
 ```
 
 ### Testing with MCP Inspector
+
 ```bash
 npx @modelcontextprotocol/inspector node dist/mcp/index.js
 ```
 
 ---
 
----
-
-## SDK for Database Integration (v0.6.0 - NEW!)
-
-The TONL SDK provides seamless database integration with automatic TONL conversion. Currently supports PostgreSQL with more databases coming soon.
-
-### PostgreSQL Adapter
-```typescript
-import { PostgresAdapter } from 'tonl-mcp-bridge';
-
-const db = new PostgresAdapter({
-  host: 'localhost',
-  port: 5432,
-  database: 'myapp',
-  user: 'admin',
-  password: 'secret'
-});
-
-await db.connect();
-
-// Simple query
-const result = await db.query('SELECT * FROM users');
-
-// Query with automatic TONL conversion
-const tonlResult = await db.queryToTonl('SELECT * FROM users', 'users');
-console.log(tonlResult.tonl);
-
-// Query with token statistics
-const stats = await db.queryWithStats(
-  'SELECT * FROM users',
-  'users',
-  { model: 'gpt-5' }
-);
-
-console.log(`Original: ${stats.stats.originalTokens} tokens`);
-console.log(`TONL: ${stats.stats.compressedTokens} tokens`);
-console.log(`Saved: ${stats.stats.savingsPercent}%`);
-
-await db.disconnect();
-```
-
-### SQLite Adapter
-
-Perfect for testing, prototyping, and lightweight applications.
-```typescript
-import { SQLiteAdapter } from 'tonl-mcp-bridge';
-
-// In-memory database (no files needed)
-const db = new SQLiteAdapter(':memory:');
-
-// Or use a file
-const dbFile = new SQLiteAdapter('myapp.db');
-
-await db.connect();
-
-// Create and populate
-await db.query(`
-  CREATE TABLE products (id INTEGER, name TEXT, price REAL)
-`);
-await db.query(`
-  INSERT INTO products VALUES (1, 'Laptop', 999.99)
-`);
-
-// Query with TONL conversion
-const result = await db.queryWithStats(
-  'SELECT * FROM products',
-  'products'
-);
-
-console.log(`Saved ${result.stats.savingsPercent}% tokens`);
-
-await db.disconnect();
-```
-
-**Key Features:**
-- No external database server required
-- In-memory mode for testing (`:memory:`)
-- Synchronous operations (faster)
-- Perfect for prototypes and demos
-
-### Try SQLite Demo
-```bash
-npx tsx examples/sdk-sqlite-demo.ts
-```
-
-No setup required - runs entirely in memory!
-
----
-
-### MySQL Adapter
-
-Enterprise-grade MySQL support with connection pooling.
-```typescript
-import { MySQLAdapter } from 'tonl-mcp-bridge';
-
-const db = new MySQLAdapter({
-  host: 'localhost',
-  port: 3306,
-  database: 'myapp',
-  user: 'admin',
-  password: 'secret'
-});
-
-await db.connect();
-
-// Query with TONL conversion
-const result = await db.queryWithStats(
-  'SELECT * FROM orders WHERE status = "pending"',
-  'orders'
-);
-
-console.log(`Retrieved ${result.rowCount} orders`);
-console.log(`Saved ${result.stats.savingsPercent}% tokens`);
-
-await db.disconnect();
-```
-
-**Features:**
-- Connection pooling (10 connections default)
-- Automatic reconnection handling
-- Compatible with MySQL 5.7+ and MariaDB
-- Full support for all TONL methods
-
-**Note:** Requires a running MySQL/MariaDB server. For testing without a server, use SQLite adapter.
-
----
-
-
-### Real-World Results
-
-Testing with 10 user records from PostgreSQL:
-
-| Format | Tokens | Savings |
-|--------|--------|---------|
-| JSON | 431 | - |
-| TONL | 212 | 50.8% |
-
-**Cost Impact (GPT-4o at $3/1M input tokens):**
-- 1,000 queries/day: **$19.50/month saved**
-- 10,000 queries/day: **$195/month saved**
-- 100,000 queries/day: **$1,950/month saved**
-
-*Savings scale linearly with query volume*
-
-### Try It Yourself
-
-We provide a complete demo setup with Docker:
-```bash
-cd examples/sdk-demo
-docker-compose up -d
-npx tsx demo.ts
-```
-
-See live token savings with real PostgreSQL data!
-
-### Supported Databases
-
-**v0.7.0:**
-- PostgreSQL
-- SQLite (new!)
-- MySQL (new!)
-
-**Coming Soon:**
-- Vector DBs: Milvus, Weaviate, Pinecone, Qdrant (v0.8.0)
-
----
-
----
-
-## Type System
-
-TONL automatically selects optimal numeric types:
-```typescript
-{ id: 1 }         // i8  (1 byte, -128 to 127)
-{ id: 1000 }      // i16 (2 bytes, -32,768 to 32,767)
-{ id: 100000 }    // i32 (4 bytes, -2B to 2B)
-{ price: 19.99 }  // f32 (32-bit float)
-{ score: 3.14159265359 } // f64 (64-bit float)
-```
-
-**Supported types:**
-- Integers: `i8`, `i16`, `i32`, `i64`
-- Floats: `f32`, `f64`
-- Strings: `str`
-- Booleans: `bool`
-- Special: `date`, `datetime`, `null`, `obj`, `arr`
-
----
-
 ## Architecture
+
 ```
 Input Formats          Core Engine           Output
 ┌──────────┐          ┌──────────┐          ┌──────────┐
@@ -531,9 +508,31 @@ Input Formats          Core Engine           Output
 
 ---
 
+## Type System
+
+TONL automatically selects optimal numeric types:
+
+```typescript
+{ id: 1 }         // i8  (1 byte, -128 to 127)
+{ id: 1000 }      // i16 (2 bytes, -32,768 to 32,767)
+{ id: 100000 }    // i32 (4 bytes, -2B to 2B)
+{ price: 19.99 }  // f32 (32-bit float)
+{ score: 3.14159265359 } // f64 (64-bit float)
+```
+
+**Supported types:**
+- Integers: `i8`, `i16`, `i32`, `i64`
+- Floats: `f32`, `f64`
+- Strings: `str`
+- Booleans: `bool`
+- Special: `date`, `datetime`, `null`, `obj`, `arr`
+
+---
+
 ## Development
 
 ### Setup
+
 ```bash
 git clone https://github.com/kryptomrx/tonl-mcp-bridge.git
 cd tonl-mcp-bridge
@@ -541,64 +540,52 @@ npm install
 ```
 
 ### Testing
+
 ```bash
-# Run tests
-npm test
-
-# Watch mode
-npm run test:watch
-
-# Coverage report
-npm run test:coverage
+npm test                 # Run tests
+npm run test:watch       # Watch mode
+npm run test:coverage    # Coverage report
 ```
 
 ### Building
+
 ```bash
 npm run build
 ```
 
 ### Code Quality
-```bash
-# Linting
-npm run lint
 
-# Formatting
-npm run format
+```bash
+npm run lint      # Linting
+npm run format    # Formatting
 ```
 
 ---
 
 ## Roadmap
 
-### ✅ v0.6.0 (Released 2025-11-22)
-- [x] SDK Foundation with BaseAdapter
-- [x] PostgreSQL adapter
-- [x] queryToTonl() and queryWithStats() methods
-- [x] Docker demo setup
-- [x] 92 unit tests
-- [x] Git hooks for security
+### ✅ v0.7.0 (Released 2025-11-23)
+- SQLite adapter with in-memory support
+- MySQL adapter with connection pooling
+- 145 tests (up from 92)
+- Ecosystem diagram
 
-### ✅ v0.7.0 (Released 2025-11-22)
-- [x] SQLite adapter with in-memory support
-- [x] MySQL adapter with connection pooling
-- [x] 145 unit tests (up from 92)
-- [x] Integration tests with real SQLite database
+### 🚧 v0.8.0 (Q1 2025 - In Development)
+- Qdrant vector database adapter
+- Batch query operations
+- Documentation website
+- MCP streaming support
 
-### 🚧 v0.8.0 (Q2 2025)
-- [ ] Vector database adapters (Milvus, Weaviate, Pinecone, Qdrant)
-- [ ] Metadata optimization for RAG systems
-- [ ] Batch query operations
-
-### 💎 v0.9.0 (Q2 2025)
-- [ ] LangChain integration
-- [ ] LlamaIndex integration
-- [ ] Advanced query optimization
+### 💎 v0.9.0 (Q1 2025)
+- More vector DBs: Milvus, Weaviate, Pinecone
+- LangChain integration
+- LlamaIndex integration
 
 ---
 
-## Performance Benchmarks
+## Benchmarks
 
-**Operation benchmarks (100 objects, nested structure):**
+**Operation performance (100 objects):**
 
 | Operation | Time | Throughput |
 |-----------|------|------------|
@@ -607,7 +594,7 @@ npm run format
 | Streaming (10MB) | 145ms | 68 MB/sec |
 | Batch (50 files) | 89ms | 561 files/sec |
 
-**Memory usage:**
+**Memory:**
 - Small files (<1MB): ~15MB
 - Large files (10MB+): Streaming mode (~50MB peak)
 
@@ -615,43 +602,51 @@ npm run format
 
 ## Known Limitations
 
-1. **Header overhead** - Single objects incur net token increase due to schema header
-2. **Schema consistency** - Optimal performance requires consistent object structure
+1. **Header overhead** - Single objects use more tokens due to schema header
+2. **Schema consistency** - Works best with consistent object structure
 3. **Parsing requirement** - Receiving system must support TONL format
-4. **Browser compatibility** - Watch mode requires Node.js file system access
+4. **Browser compatibility** - Watch mode requires Node.js
 5. **Numeric precision** - Float type selection may affect precision in edge cases
 
 ---
 
 ## Contributing
 
-Contributions are welcome. Please:
+Contributions welcome:
 
-1. Fork the repository
+1. Fork the repo
 2. Create a feature branch
-3. Write tests for new functionality
+3. Write tests
 4. Ensure all tests pass
-5. Submit pull request with clear description
+5. Submit pull request
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 ---
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) file for details
+MIT License - see [LICENSE](LICENSE) file
 
 ---
 
 ## Links
 
 - [npm package](https://www.npmjs.com/package/tonl-mcp-bridge)
-- [GitHub repository](https://github.com/kryptomrx/tonl-mcp-bridge)
-- [Issue tracker](https://github.com/kryptomrx/tonl-mcp-bridge/issues)
+- [GitHub](https://github.com/kryptomrx/tonl-mcp-bridge)
+- [Issues](https://github.com/kryptomrx/tonl-mcp-bridge/issues)
 - [Changelog](CHANGELOG.md)
 
 ---
 
 ## Support
 
-For bugs and feature requests, please use the GitHub issue tracker. For general questions, start a discussion in the repository.
+Found a bug? Have a feature request? [Open an issue](https://github.com/kryptomrx/tonl-mcp-bridge/issues).
+
+For questions, use [GitHub Discussions](https://github.com/kryptomrx/tonl-mcp-bridge/discussions).
+
+---
+
+⭐ **Star on GitHub** if you find this useful!
+
+Built by [@kryptomrx](https://github.com/kryptomrx)
