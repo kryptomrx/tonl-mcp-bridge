@@ -10,6 +10,7 @@ import type {
   BatchTonlResult,
   BatchStatsResult,
   BatchOptions,
+  QueryAnalysis,
 } from './types.js';
 
 export abstract class BaseAdapter {
@@ -137,6 +138,59 @@ export abstract class BaseAdapter {
     return {
       results: batchResults,
       aggregate,
+    };
+  }
+  // Query Analysis
+  async analyzeQuery(
+    sql: string,
+    name: string = 'data',
+    options: { model?: ModelName } = {}
+  ): Promise<QueryAnalysis> {
+    // Execute query to get row count and sample
+    const result = await this.query(sql);
+    const rowCount = result.rowCount;
+    
+    if (rowCount === 0) {
+      return {
+        estimatedRows: 0,
+        estimatedJsonTokens: 0,
+        estimatedTonlTokens: 0,
+        potentialSavings: 0,
+        potentialSavingsPercent: 0,
+        recommendation: 'use-json',
+        costImpact: '$0.00',
+      };
+    }
+
+    // Convert to JSON and TONL for token counting
+    const jsonStr = JSON.stringify(result.data);
+    const tonlStr = jsonToTonl(result.data as Record<string, unknown>[], name);
+    
+    const model = options.model || 'gpt-5';
+    const stats = calculateRealSavings(jsonStr, tonlStr, model);
+
+    // Determine recommendation
+    let recommendation: 'use-tonl' | 'use-json' | 'marginal';
+    if (stats.savingsPercent > 30) {
+      recommendation = 'use-tonl';
+    } else if (stats.savingsPercent < 10) {
+      recommendation = 'use-json';
+    } else {
+      recommendation = 'marginal';
+    }
+
+    // Calculate cost impact (GPT-4 pricing: $3/1M input tokens)
+    const costPerToken = 3 / 1_000_000;
+    const costSaved = stats.savedTokens * costPerToken;
+
+    return {
+      estimatedRows: rowCount,
+      estimatedJsonTokens: stats.originalTokens,
+      estimatedTonlTokens: stats.compressedTokens,
+      potentialSavings: stats.savedTokens,
+      potentialSavingsPercent: stats.savingsPercent,
+      recommendation,
+      costImpact: `$${costSaved.toFixed(6)}`,
     };
   }
 }

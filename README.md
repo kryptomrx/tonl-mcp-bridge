@@ -414,6 +414,50 @@ result.results.forEach((r, i) => {
 
 ---
 
+### Query Analyzer
+
+Analyze queries before execution to estimate token savings and costs.
+
+```typescript
+import { PostgresAdapter } from 'tonl-mcp-bridge';
+
+const db = new PostgresAdapter(config);
+await db.connect();
+
+const analysis = await db.analyzeQuery(
+  'SELECT * FROM users',
+  'users',
+  { model: 'gpt-5' }
+);
+
+console.log('Estimated rows:', analysis.estimatedRows);
+console.log('JSON tokens:', analysis.estimatedJsonTokens);
+console.log('TONL tokens:', analysis.estimatedTonlTokens);
+console.log('Savings:', analysis.potentialSavingsPercent + '%');
+console.log('Cost impact:', analysis.costImpact, 'per call');
+console.log('Recommendation:', analysis.recommendation);
+
+// Output:
+// Estimated rows: 10
+// JSON tokens: 431
+// TONL tokens: 212
+// Savings: 50.8%
+// Cost impact: $0.000657 per call
+// Recommendation: use-tonl
+```
+
+**Recommendations:**
+- `use-tonl` - Savings > 30%
+- `marginal` - Savings 10-30%
+- `use-json` - Savings < 10%
+
+**Works with:**
+- PostgreSQL
+- MySQL
+- SQLite
+
+---
+
 ## API Reference
 
 ### Core Functions
@@ -650,12 +694,13 @@ npm run format    # Formatting
 ### 🚧 v0.8.0 (Q1 2025 - In Development)
 - Qdrant vector database adapter
 - Batch query operations (48% savings)
-- 150 tests
+- Query analyzer (foundation)
+- 155 tests
 - Documentation website (planned)
 - MCP streaming support (planned)
 
 ### 💎 v0.9.0 (Q1 2025)
-- Query analyzer
+- Query analyzer (advanced features)
 - More vector DBs (Milvus, Weaviate, Pinecone)
 - LangChain integration
 - LlamaIndex integration
