@@ -733,23 +733,18 @@ npm run format    # Formatting
 
 ## Roadmap
 
-### ✅ v0.7.0 (Released 2025-11-23)
-- SQLite adapter with in-memory support
-- MySQL adapter with connection pooling
-- 145 tests
-- Ecosystem diagram
-
-### 🚧 v0.8.0 (Q1 2025 - In Development)
+### ✅ v0.8.0 (Released 2025-11-23)
 - Qdrant vector database adapter
 - Batch query operations (48% savings)
-- Query analyzer (foundation)
-- 155 tests
-- Documentation website (planned)
-- MCP streaming support (planned)
+- Query analyzer with cost estimation
+- Schema drift monitoring
+- 162 tests
+- Complete TypeScript SDK
 
-### 💎 v0.9.0 (Q1 2025)
-- Query analyzer (advanced features)
+### 🚧 v0.9.0 (Q1 2025 - Planned)
+- MCP streaming HTTP support
 - More vector DBs (Milvus, Weaviate, Pinecone)
+- Query analyzer advanced features (sampling, caching)
 - LangChain integration
 - LlamaIndex integration
 
@@ -801,6 +796,13 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 MIT License - see [LICENSE](LICENSE) file
 
 ---
+
+## Related Projects
+
+This project builds on the [TONL format](https://github.com/tonl-dev/tonl) by Ersin Koç, focusing on database integration and production tooling. For CLI tools and document queries, see the original TONL project.
+
+---
+
 
 ## Links
 
