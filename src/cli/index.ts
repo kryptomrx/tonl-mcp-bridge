@@ -32,7 +32,6 @@ program
   .description('Convert between JSON, YAML, and TONL formats for token optimization')
   .version(packageJson.version);
 
-
 program
   .command('convert')
   .argument('<input>', 'Input file path')
@@ -78,11 +77,11 @@ program
         } else {
           inputContent = readFileSync(input, 'utf-8');
           const jsonData = JSON.parse(inputContent);
-        if (options.validate) {
-          console.log('🔍 Validating schema...');
-          // Schema validation already happens in jsonToTonl
-          console.log('✅ Schema valid!');
-        }
+          if (options.validate) {
+            console.log('🔍 Validating schema...');
+            // Schema validation already happens in jsonToTonl
+            console.log('✅ Schema valid!');
+          }
           if (!Array.isArray(jsonData)) {
             console.error('❌ Error: JSON must contain an array of objects');
             console.error('   Example:');
@@ -202,9 +201,9 @@ program
           console.log(`❌ No files found matching: ${pattern}`);
           return;
         }
-        
+
         console.log(`👀 Watching ${files.length} file(s)...\n`);
-        
+
         // Watch each file individually
         startWatch({
           pattern: files, // Pass array of files

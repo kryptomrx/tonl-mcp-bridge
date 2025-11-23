@@ -8,10 +8,9 @@
 
 import { TonlParseError, createDetailedError } from '../utils/errors.js';
 
-
 export function tonlTypeToValue(value: string, type: string): unknown {
   const trimmed = value.trim();
-  
+
   // Handle quoted strings (remove quotes and unescape)
   if (trimmed.startsWith('"') && trimmed.endsWith('"')) {
     const unquoted = trimmed.slice(1, -1);
@@ -22,7 +21,7 @@ export function tonlTypeToValue(value: string, type: string): unknown {
       .replace(/\\"/g, '"')
       .replace(/\\\\/g, '\\');
   }
-  
+
   // Convert based on type
   switch (type) {
     // All integer types
@@ -34,30 +33,30 @@ export function tonlTypeToValue(value: string, type: string): unknown {
     case 'f32':
     case 'f64':
       return Number(trimmed);
-    
+
     case 'bool':
       return trimmed === 'true';
-    
+
     case 'null':
       return null;
-    
+
     case 'str':
       return trimmed;
-    
+
     case 'date':
       return trimmed;
-    
+
     case 'datetime':
       return trimmed;
-    
+
     case 'arr':
       // Parse array with nested support
       return parseNestedObject(trimmed);
-    
+
     case 'obj':
       // Parse object with nested support
       return parseNestedObject(trimmed);
-    
+
     default:
       return trimmed;
   }
@@ -73,20 +72,15 @@ export function parseTonlHeader(header: string): {
 } {
   const match = header.match(/^(\w+)\[(\d+)\]\{([^}]+)\}$/);
 
-
-if (!match) {
-  throw new TonlParseError(
-    createDetailedError('Invalid TONL header format', {
-      input: header,
-      expected: 'name[count]{field:type,field:type}',
-      received: header,
-    })
-  );
-}
-
-
-
-
+  if (!match) {
+    throw new TonlParseError(
+      createDetailedError('Invalid TONL header format', {
+        input: header,
+        expected: 'name[count]{field:type,field:type}',
+        received: header,
+      })
+    );
+  }
 
   const name = match[1];
   const count = parseInt(match[2], 10);
@@ -147,11 +141,11 @@ export function splitRespectingQuotes(str: string): string[] {
   let current = '';
   let inQuotes = false;
   let depth = 0; // Track nesting depth
-  
+
   for (let i = 0; i < str.length; i++) {
     const char = str[i];
-    
-    if (char === '"' && (i === 0 || str[i-1] !== '\\')) {
+
+    if (char === '"' && (i === 0 || str[i - 1] !== '\\')) {
       inQuotes = !inQuotes;
       current += char;
     } else if (!inQuotes) {
@@ -173,11 +167,11 @@ export function splitRespectingQuotes(str: string): string[] {
       current += char;
     }
   }
-  
+
   if (current) {
     result.push(current.trim());
   }
-  
+
   return result;
 }
 /**
@@ -185,35 +179,35 @@ export function splitRespectingQuotes(str: string): string[] {
  */
 function parseNestedObject(str: string): unknown {
   const trimmed = str.trim();
-  
+
   // Parse object: {key:value,key:value}
   if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
     const content = trimmed.slice(1, -1);
     if (!content) return {};
-    
+
     const obj: Record<string, unknown> = {};
     const pairs = splitNestedPairs(content);
-    
-    pairs.forEach(pair => {
+
+    pairs.forEach((pair) => {
       const colonIndex = pair.indexOf(':');
       if (colonIndex === -1) return;
-      
+
       const key = pair.slice(0, colonIndex).trim();
       const value = pair.slice(colonIndex + 1).trim();
       obj[key] = parseNestedValue(value);
     });
-    
+
     return obj;
   }
-  
+
   // Parse array: [item,item,item]
   if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
     const content = trimmed.slice(1, -1);
     if (!content) return [];
-    
-    return splitNestedPairs(content).map(item => parseNestedValue(item.trim()));
+
+    return splitNestedPairs(content).map((item) => parseNestedValue(item.trim()));
   }
-  
+
   return trimmed;
 }
 
@@ -222,21 +216,21 @@ function parseNestedObject(str: string): unknown {
  */
 function parseNestedValue(value: string): unknown {
   const trimmed = value.trim();
-  
+
   if (trimmed === 'null') return null;
   if (trimmed === 'true') return true;
   if (trimmed === 'false') return false;
-  
+
   // Check if it's a number
   if (/^-?\d+(\.\d+)?$/.test(trimmed)) {
     return Number(trimmed);
   }
-  
+
   // Check if it's nested object or array
   if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
     return parseNestedObject(trimmed);
   }
-  
+
   return trimmed;
 }
 
@@ -247,10 +241,10 @@ function splitNestedPairs(str: string): string[] {
   const result: string[] = [];
   let current = '';
   let depth = 0;
-  
+
   for (let i = 0; i < str.length; i++) {
     const char = str[i];
-    
+
     if (char === '{' || char === '[') {
       depth++;
       current += char;
@@ -266,10 +260,10 @@ function splitNestedPairs(str: string): string[] {
       current += char;
     }
   }
-  
+
   if (current.trim()) {
     result.push(current.trim());
   }
-  
+
   return result;
 }

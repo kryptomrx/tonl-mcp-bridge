@@ -26,12 +26,7 @@ export interface StatsResult extends TonlResult {
   };
 }
 
-export type ModelName =
-  | 'gpt-5'
-  | 'gpt-4'
-  | 'claude-4-opus'
-  | 'claude-4-sonnet'
-  | 'gemini-2.5-pro';
+export type ModelName = 'gpt-5' | 'gpt-4' | 'claude-4-opus' | 'claude-4-sonnet' | 'gemini-2.5-pro';
 
 export class DatabaseError extends Error {
   constructor(

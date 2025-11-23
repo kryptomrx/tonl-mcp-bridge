@@ -7,6 +7,9 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)](https://www.typescriptlang.org/)
 [![License](https://img.shields.io/npm/l/tonl-mcp-bridge.svg)](https://github.com/kryptomrx/tonl-mcp-bridge/blob/main/LICENSE)
 
+![TONL Ecosystem](docs/images/image.png)
+
+
 ## Overview
 
 TONL-MCP Bridge is a TypeScript library and CLI tool for converting structured data between JSON/YAML and TONL (Token Optimized Natural Language) format. When used with datasets of 10+ similar objects, TONL can reduce token usage by 30-60% compared to JSON.
@@ -352,6 +355,93 @@ console.log(`Saved: ${stats.stats.savingsPercent}%`);
 await db.disconnect();
 ```
 
+### SQLite Adapter
+
+Perfect for testing, prototyping, and lightweight applications.
+```typescript
+import { SQLiteAdapter } from 'tonl-mcp-bridge';
+
+// In-memory database (no files needed)
+const db = new SQLiteAdapter(':memory:');
+
+// Or use a file
+const dbFile = new SQLiteAdapter('myapp.db');
+
+await db.connect();
+
+// Create and populate
+await db.query(`
+  CREATE TABLE products (id INTEGER, name TEXT, price REAL)
+`);
+await db.query(`
+  INSERT INTO products VALUES (1, 'Laptop', 999.99)
+`);
+
+// Query with TONL conversion
+const result = await db.queryWithStats(
+  'SELECT * FROM products',
+  'products'
+);
+
+console.log(`Saved ${result.stats.savingsPercent}% tokens`);
+
+await db.disconnect();
+```
+
+**Key Features:**
+- No external database server required
+- In-memory mode for testing (`:memory:`)
+- Synchronous operations (faster)
+- Perfect for prototypes and demos
+
+### Try SQLite Demo
+```bash
+npx tsx examples/sdk-sqlite-demo.ts
+```
+
+No setup required - runs entirely in memory!
+
+---
+
+### MySQL Adapter
+
+Enterprise-grade MySQL support with connection pooling.
+```typescript
+import { MySQLAdapter } from 'tonl-mcp-bridge';
+
+const db = new MySQLAdapter({
+  host: 'localhost',
+  port: 3306,
+  database: 'myapp',
+  user: 'admin',
+  password: 'secret'
+});
+
+await db.connect();
+
+// Query with TONL conversion
+const result = await db.queryWithStats(
+  'SELECT * FROM orders WHERE status = "pending"',
+  'orders'
+);
+
+console.log(`Retrieved ${result.rowCount} orders`);
+console.log(`Saved ${result.stats.savingsPercent}% tokens`);
+
+await db.disconnect();
+```
+
+**Features:**
+- Connection pooling (10 connections default)
+- Automatic reconnection handling
+- Compatible with MySQL 5.7+ and MariaDB
+- Full support for all TONL methods
+
+**Note:** Requires a running MySQL/MariaDB server. For testing without a server, use SQLite adapter.
+
+---
+
+
 ### Real-World Results
 
 Testing with 10 user records from PostgreSQL:
@@ -381,12 +471,12 @@ See live token savings with real PostgreSQL data!
 
 ### Supported Databases
 
-**v0.6.0:**
+**v0.7.0:**
 - PostgreSQL
+- SQLite (new!)
+- MySQL (new!)
 
 **Coming Soon:**
-- MySQL (v0.7.0)
-- SQLite (v0.7.0)
 - Vector DBs: Milvus, Weaviate, Pinecone, Qdrant (v0.8.0)
 
 ---
@@ -488,11 +578,11 @@ npm run format
 - [x] 92 unit tests
 - [x] Git hooks for security
 
-### 🚧 v0.7.0 (Q1 2025)
-- [ ] MySQL adapter
-- [ ] SQLite adapter
-- [ ] Transaction support
-- [ ] Connection pooling optimization
+### ✅ v0.7.0 (Released 2025-11-22)
+- [x] SQLite adapter with in-memory support
+- [x] MySQL adapter with connection pooling
+- [x] 145 unit tests (up from 92)
+- [x] Integration tests with real SQLite database
 
 ### 🚧 v0.8.0 (Q2 2025)
 - [ ] Vector database adapters (Milvus, Weaviate, Pinecone, Qdrant)

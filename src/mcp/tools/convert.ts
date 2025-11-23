@@ -50,16 +50,16 @@ export const CONVERT_TO_TONL_TOOL = {
 };
 
 export async function convertToTonlHandler(
-  input: ConvertToTonlInput,
+  input: ConvertToTonlInput
 ): Promise<ToolResponse<{ tonl: string }>> {
   try {
     const { data, name, options } = input;
 
-const dataArray = Array.isArray(data) ? data : [data];
+    const dataArray = Array.isArray(data) ? data : [data];
 
-const tonl = jsonToTonl(dataArray, name, {
-  flattenNested: options?.flattenNested || false,
-});
+    const tonl = jsonToTonl(dataArray, name, {
+      flattenNested: options?.flattenNested || false,
+    });
     // Calculate stats if requested
     let stats;
     if (options?.includeStats) {

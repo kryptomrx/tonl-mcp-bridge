@@ -1,7 +1,6 @@
 /**
  * TONL-MCP Bridge
  * Token-optimized format for LLM context windows
- *
  * @packageDocumentation
  */
 
@@ -44,8 +43,11 @@ export {
 export {
   BaseAdapter,
   PostgresAdapter,
+  SQLiteAdapter,
+  MySQLAdapter,
   DatabaseError,
   type DatabaseConfig,
+  type SQLiteConfig,
   type QueryResult,
   type TonlResult,
   type StatsResult,

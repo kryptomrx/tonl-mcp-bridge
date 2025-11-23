@@ -125,9 +125,7 @@ describe('MCP Tools', () => {
       expect(result.success).toBe(true);
       expect(result.data?.originalTokens).toBeGreaterThan(0);
       expect(result.data?.compressedTokens).toBeGreaterThan(0);
-      expect(result.data?.compressedTokens).toBeLessThan(
-        result.data?.originalTokens,
-      );
+      expect(result.data?.compressedTokens).toBeLessThan(result.data?.originalTokens);
       expect(result.data?.model).toBe('gpt-5');
     });
   });

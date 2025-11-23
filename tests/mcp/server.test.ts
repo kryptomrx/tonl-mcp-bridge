@@ -5,7 +5,7 @@ describe('TONL MCP Server', () => {
   describe('createTonlMcpServer', () => {
     it('should create server with default config', async () => {
       const server = await createTonlMcpServer();
-      
+
       expect(server).toBeDefined();
       expect(server).toBeInstanceOf(TonlMcpServer);
     });
@@ -15,7 +15,7 @@ describe('TONL MCP Server', () => {
         name: 'test-server',
         version: '0.0.1',
       });
-      
+
       expect(server).toBeDefined();
     });
   });

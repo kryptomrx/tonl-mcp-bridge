@@ -13,20 +13,10 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 
 import { McpServerConfig } from './types.js';
-import {
-  CONVERT_TO_TONL_TOOL,
-  convertToTonlHandler,
-} from './tools/convert.js';
+import { CONVERT_TO_TONL_TOOL, convertToTonlHandler } from './tools/convert.js';
 import { PARSE_TONL_TOOL, parseTonlHandler } from './tools/parse.js';
-import {
-  CALCULATE_SAVINGS_TOOL,
-  calculateSavingsHandler,
-} from './tools/calculate-savings.js';
-import {
-  ConvertToTonlSchema,
-  ParseTonlSchema,
-  CalculateSavingsSchema,
-} from './types.js';
+import { CALCULATE_SAVINGS_TOOL, calculateSavingsHandler } from './tools/calculate-savings.js';
+import { ConvertToTonlSchema, ParseTonlSchema, CalculateSavingsSchema } from './types.js';
 
 export class TonlMcpServer {
   private server: Server;
@@ -45,7 +35,7 @@ export class TonlMcpServer {
         capabilities: {
           tools: {},
         },
-      },
+      }
     );
 
     this.setupHandlers();
@@ -55,11 +45,7 @@ export class TonlMcpServer {
     // List available tools
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
       return {
-        tools: [
-          CONVERT_TO_TONL_TOOL,
-          PARSE_TONL_TOOL,
-          CALCULATE_SAVINGS_TOOL,
-        ],
+        tools: [CONVERT_TO_TONL_TOOL, PARSE_TONL_TOOL, CALCULATE_SAVINGS_TOOL],
       };
     });
 
@@ -74,10 +60,7 @@ export class TonlMcpServer {
             const result = await convertToTonlHandler(validated);
 
             if (!result.success) {
-              throw new McpError(
-                ErrorCode.InternalError,
-                result.error || 'Conversion failed',
-              );
+              throw new McpError(ErrorCode.InternalError, result.error || 'Conversion failed');
             }
 
             return {
@@ -90,7 +73,7 @@ export class TonlMcpServer {
                       stats: result.stats,
                     },
                     null,
-                    2,
+                    2
                   ),
                 },
               ],
@@ -102,10 +85,7 @@ export class TonlMcpServer {
             const result = await parseTonlHandler(validated);
 
             if (!result.success) {
-              throw new McpError(
-                ErrorCode.InternalError,
-                result.error || 'Parsing failed',
-              );
+              throw new McpError(ErrorCode.InternalError, result.error || 'Parsing failed');
             }
 
             return {
@@ -123,10 +103,7 @@ export class TonlMcpServer {
             const result = await calculateSavingsHandler(validated);
 
             if (!result.success) {
-              throw new McpError(
-                ErrorCode.InternalError,
-                result.error || 'Calculation failed',
-              );
+              throw new McpError(ErrorCode.InternalError, result.error || 'Calculation failed');
             }
 
             return {
@@ -140,10 +117,7 @@ export class TonlMcpServer {
           }
 
           default:
-            throw new McpError(
-              ErrorCode.MethodNotFound,
-              `Unknown tool: ${name}`,
-            );
+            throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${name}`);
         }
       } catch (error) {
         if (error instanceof McpError) {
@@ -152,7 +126,7 @@ export class TonlMcpServer {
 
         throw new McpError(
           ErrorCode.InternalError,
-          error instanceof Error ? error.message : 'Unknown error',
+          error instanceof Error ? error.message : 'Unknown error'
         );
       }
     });
@@ -182,7 +156,7 @@ export class TonlMcpServer {
  * Create and start a TONL MCP server
  */
 export async function createTonlMcpServer(
-  config: Partial<McpServerConfig> = {},
+  config: Partial<McpServerConfig> = {}
 ): Promise<TonlMcpServer> {
   const defaultConfig: McpServerConfig = {
     name: 'tonl-mcp-bridge',

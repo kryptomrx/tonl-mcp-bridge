@@ -146,9 +146,9 @@ export function detectNestedSchema(obj: Record<string, unknown>): {
   for (const key in obj) {
     const value = obj[key];
     const type = detectType(value);
-    
+
     schema[key] = type;
-    
+
     if (type === 'object' || type === 'array') {
       hasNested = true;
     }
@@ -160,10 +160,7 @@ export function detectNestedSchema(obj: Record<string, unknown>): {
 /**
  * Flatten nested object for TONL v1 compatibility
  */
-export function flattenObject(
-  obj: Record<string, unknown>,
-  prefix = ''
-): Record<string, unknown> {
+export function flattenObject(obj: Record<string, unknown>, prefix = ''): Record<string, unknown> {
   const result: Record<string, unknown> = {};
 
   for (const key in obj) {

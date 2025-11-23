@@ -12,7 +12,7 @@ describe('Error Classes', () => {
   describe('TonlError', () => {
     it('should create base error', () => {
       const error = new TonlError('Test error', 'TEST_CODE');
-      
+
       expect(error.message).toBe('Test error');
       expect(error.code).toBe('TEST_CODE');
       expect(error.name).toBe('TonlError');
@@ -27,7 +27,7 @@ describe('Error Classes', () => {
   describe('TonlParseError', () => {
     it('should create parse error', () => {
       const error = new TonlParseError('Parse failed');
-      
+
       expect(error.message).toBe('Parse failed');
       expect(error.code).toBe('PARSE_ERROR');
       expect(error.name).toBe('TonlParseError');
@@ -37,7 +37,7 @@ describe('Error Classes', () => {
   describe('TonlValidationError', () => {
     it('should create validation error', () => {
       const error = new TonlValidationError('Invalid input');
-      
+
       expect(error.code).toBe('VALIDATION_ERROR');
       expect(error.name).toBe('TonlValidationError');
     });
@@ -46,7 +46,7 @@ describe('Error Classes', () => {
   describe('TonlSchemaError', () => {
     it('should create schema error', () => {
       const error = new TonlSchemaError('Schema mismatch');
-      
+
       expect(error.code).toBe('SCHEMA_ERROR');
       expect(error.name).toBe('TonlSchemaError');
     });
@@ -55,7 +55,7 @@ describe('Error Classes', () => {
   describe('TonlTypeError', () => {
     it('should create type error', () => {
       const error = new TonlTypeError('Type mismatch');
-      
+
       expect(error.code).toBe('TYPE_ERROR');
       expect(error.name).toBe('TonlTypeError');
     });

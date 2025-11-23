@@ -11,8 +11,8 @@ export async function streamJsonToTonl(
 ): Promise<void> {
   const readStream = createReadStream(inputPath, { encoding: 'utf-8' });
   const writeStream = createWriteStream(outputPath);
-  
-  let isFirstLine = true;
+
+  const isFirstLine = true;
   let buffer = '';
   let itemCount = 0;
   const items: any[] = [];
@@ -25,15 +25,15 @@ export async function streamJsonToTonl(
 
   for await (const line of rl) {
     buffer += line.trim();
-    
+
     // Skip empty lines
     if (!buffer) continue;
-    
+
     // Try to parse complete JSON objects
     try {
       // Remove array brackets if present
       const cleaned = buffer.replace(/^\[|\]$/g, '').replace(/,$/, '');
-      
+
       if (cleaned && cleaned !== '') {
         const obj = JSON.parse(cleaned);
         items.push(obj);
@@ -49,7 +49,7 @@ export async function streamJsonToTonl(
   // (In real streaming, this would be chunked)
   const { jsonToTonl } = await import('./json-to-tonl.js');
   const tonl = jsonToTonl(items, collectionName);
-  
+
   writeStream.write(tonl);
   writeStream.end();
 

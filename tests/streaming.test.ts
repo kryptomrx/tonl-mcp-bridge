@@ -29,7 +29,7 @@ describe('Streaming', () => {
     await streamJsonToTonl(testInput, testOutput, 'users');
 
     const result = readFileSync(testOutput, 'utf-8');
-    
+
     expect(result).toContain('users[3]');
     expect(result).toContain('Alice');
     expect(result).toContain('Bob');

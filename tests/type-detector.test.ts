@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { detectType, detectObjectSchema } from '../src/core/type-detector';
-import { 
-  detectNumberType,      // ← ADD
-  detectDateType,        // ← ADD
-  validateAndMergeSchemas // ← ADD
+import {
+  detectNumberType, // ← ADD
+  detectDateType, // ← ADD
+  validateAndMergeSchemas, // ← ADD
 } from '../src/core/type-detector';
 
 describe('Type Detector', () => {
@@ -103,29 +103,23 @@ describe('validateAndMergeSchemas', () => {
       { id: 1, name: 'Alice' },
       { id: 2, name: 'Bob' },
     ];
-    
+
     const schema = validateAndMergeSchemas(objects);
     expect(schema.id).toBe('int8');
     expect(schema.name).toBe('string');
   });
 
   it('should handle missing keys', () => {
-    const objects = [
-      { id: 1, name: 'Alice' },
-      { id: 2 },
-    ];
-    
+    const objects = [{ id: 1, name: 'Alice' }, { id: 2 }];
+
     const schema = validateAndMergeSchemas(objects);
     expect(schema.id).toBe('int8');
     expect(schema.name).toBe('string');
   });
 
   it('should use most general type for mixed types', () => {
-    const objects = [
-      { value: 10 },
-      { value: 1000 },
-    ];
-    
+    const objects = [{ value: 10 }, { value: 1000 }];
+
     const schema = validateAndMergeSchemas(objects);
     expect(schema.value).toBe('int16'); // Most general
   });

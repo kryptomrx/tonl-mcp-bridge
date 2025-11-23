@@ -41,9 +41,7 @@ export const CALCULATE_SAVINGS_TOOL = {
   },
 };
 
-export async function calculateSavingsHandler(
-  input: CalculateSavingsInput,
-): Promise<
+export async function calculateSavingsHandler(input: CalculateSavingsInput): Promise<
   ToolResponse<{
     originalTokens: number;
     compressedTokens: number;

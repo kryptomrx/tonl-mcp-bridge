@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2025-11-22
+
+### Added
+- **SQLite Adapter**: Full SQLite support with in-memory database capability
+- **MySQL Adapter**: Enterprise-grade MySQL support with connection pooling
+- **In-Memory Testing**: SQLite `:memory:` support for fast testing without external database
+- **Integration Tests**: 20 new database adapter tests (10 SQLite + 10 MySQL)
+- **Demo**: SQLite in-memory demo (`examples/sdk-sqlite-demo.ts`)
+
+### Technical Details
+- `SQLiteAdapter` extends BaseAdapter with synchronous operations
+- `MySQLAdapter` extends BaseAdapter with connection pooling (10 connections default)
+- Automatic detection of SELECT vs INSERT/UPDATE/DELETE/CREATE statements (SQLite)
+- Uses `better-sqlite3` for high-performance synchronous SQLite operations
+- Uses `mysql2` for MySQL with promise-based async API
+- Full support for `queryToTonl()` and `queryWithStats()` on all adapters
+- 84% test coverage for SQLite adapter
+
+### Tests
+- 145 total tests (up from 125)
+- 10 new SQLite integration tests with real database operations
+- 10 new MySQL adapter tests
+- Real database operations tested: CREATE, INSERT, SELECT
+
+### Breaking Changes
+None - fully backward compatible
+
+---
+
 ## [0.6.0] - 2025-11-22
 
 ### Added

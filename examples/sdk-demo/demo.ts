@@ -27,7 +27,9 @@ async function demo() {
     console.log('💾 Token Statistics:');
     console.log(`   JSON:     ${result.stats.originalTokens} tokens`);
     console.log(`   TONL:     ${result.stats.compressedTokens} tokens`);
-    console.log(`   Saved:    ${result.stats.savedTokens} tokens (${result.stats.savingsPercent.toFixed(1)}%)\n`);
+    console.log(
+      `   Saved:    ${result.stats.savedTokens} tokens (${result.stats.savingsPercent.toFixed(1)}%)\n`
+    );
 
     console.log('🎯 TONL Format (first 4 lines):');
     const lines = result.tonl.split('\n').slice(0, 5);

@@ -1,9 +1,9 @@
-import { Pool } from 'pg';
+import mysql from 'mysql2/promise';
 import { BaseAdapter } from '../adapters/base.js';
 import { DatabaseConfig, QueryResult, DatabaseError } from '../adapters/types.js';
 
-export class PostgresAdapter extends BaseAdapter {
-  private pool: Pool | null = null;
+export class MySQLAdapter extends BaseAdapter {
+  private pool: mysql.Pool | null = null;
 
   constructor(config: DatabaseConfig) {
     super(config);
@@ -15,19 +15,21 @@ export class PostgresAdapter extends BaseAdapter {
     }
 
     try {
-      this.pool = new Pool({
+      this.pool = mysql.createPool({
         host: this.config.host,
-        port: this.config.port || 5432,
+        port: this.config.port || 3306,
         database: this.config.database,
         user: this.config.user,
         password: this.config.password,
+        waitForConnections: true,
+        connectionLimit: 10,
       });
 
       await this.pool.query('SELECT 1');
       this.connected = true;
     } catch (error) {
       throw new DatabaseError(
-        'Failed to connect to PostgreSQL',
+        'Failed to connect to MySQL',
         undefined,
         error instanceof Error ? error : undefined
       );
@@ -45,7 +47,7 @@ export class PostgresAdapter extends BaseAdapter {
       this.pool = null;
     } catch (error) {
       throw new DatabaseError(
-        'Failed to disconnect from PostgreSQL',
+        'Failed to disconnect from MySQL',
         undefined,
         error instanceof Error ? error : undefined
       );
@@ -60,10 +62,18 @@ export class PostgresAdapter extends BaseAdapter {
     }
 
     try {
-      const result = await this.pool.query(sql);
+      const [rows] = await this.pool.query(sql);
+
+      if (Array.isArray(rows)) {
+        return {
+          data: rows as T[],
+          rowCount: rows.length,
+        };
+      }
+
       return {
-        data: result.rows as T[],
-        rowCount: result.rowCount || 0,
+        data: [] as T[],
+        rowCount: 0,
       };
     } catch (error) {
       throw new DatabaseError(

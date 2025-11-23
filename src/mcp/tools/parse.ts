@@ -28,7 +28,7 @@ export const PARSE_TONL_TOOL = {
 };
 
 export async function parseTonlHandler(
-  input: ParseTonlInput,
+  input: ParseTonlInput
 ): Promise<ToolResponse<{ json: unknown }>> {
   try {
     const { tonl } = input;

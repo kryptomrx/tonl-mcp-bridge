@@ -59,11 +59,14 @@ export async function batchConvert(options: BatchOptions): Promise<void> {
 
       // Determine output path
       const outputPath = options.outputDir
-        ? `${options.outputDir}/${filepath.split('/').pop()?.replace(/\.(json|ya?ml)$/, '.tonl')}`
+        ? `${options.outputDir}/${filepath
+            .split('/')
+            .pop()
+            ?.replace(/\.(json|ya?ml)$/, '.tonl')}`
         : filepath.replace(/\.(json|ya?ml)$/, '.tonl');
 
       writeFileSync(outputPath, tonl, 'utf-8');
-      
+
       if (options.stats) {
         const savings = Math.round((1 - tonl.length / content.length) * 100);
         console.log(`✅ ${filepath} → ${outputPath} (${savings}% savings)`);

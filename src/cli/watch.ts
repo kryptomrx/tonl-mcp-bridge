@@ -72,6 +72,9 @@ function convertFile(filepath: string, options: WatchOptions): void {
     writeFileSync(outputPath, tonl, 'utf-8');
     console.log(`✅ Converted: ${filepath} → ${outputPath}\n`);
   } catch (error) {
-    console.error(`❌ Error converting ${filepath}:`, error instanceof Error ? error.message : String(error));
+    console.error(
+      `❌ Error converting ${filepath}:`,
+      error instanceof Error ? error.message : String(error)
+    );
   }
 }
