@@ -43,3 +43,11 @@ examples/*-live.ts
 examples/*-demo.ts
 examples/*.local.ts
 .env
+
+# TONL Schema Baselines
+.tonl-schemas/
+
+# Local development files with credentials
+*.local.ts
+*.local.js
+*.local.example.ts

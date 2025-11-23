@@ -29,8 +29,15 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
       
-      - name: Install dependencies
-        run: npm ci
+      - name: Clean install dependencies
+        run: |
+          rm -rf node_modules
+          npm ci
+      
+      - name: Verify test configuration
+        run: |
+          echo "Vitest will run these test files:"
+          npx vitest list 2>&1 | head -20
       
       - name: Run linter
         run: npm run lint
