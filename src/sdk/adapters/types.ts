@@ -38,3 +38,37 @@ export class DatabaseError extends Error {
     this.name = 'DatabaseError';
   }
 }
+
+// Batch query types
+export interface BatchQuery {
+  sql: string;
+  name: string;
+}
+
+export interface BatchTonlResult {
+  tonl: string;
+  rowCount: number;
+  stats?: {
+    originalTokens: number;
+    compressedTokens: number;
+    savedTokens: number;
+    savingsPercent: number;
+  };
+}
+
+export interface BatchStatsResult {
+  results: BatchTonlResult[];
+  aggregate: {
+    totalQueries: number;
+    totalRows: number;
+    totalOriginalTokens: number;
+    totalCompressedTokens: number;
+    savedTokens: number;
+    savingsPercent: number;
+  };
+}
+
+export interface BatchOptions {
+  model?: ModelName;
+  parallel?: boolean; // default: true
+}

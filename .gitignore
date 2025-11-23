@@ -42,3 +42,4 @@ examples/*.local.ts
 examples/*-live.ts
 examples/*-demo.ts
 examples/*.local.ts
+.env
