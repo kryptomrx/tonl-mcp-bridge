@@ -5,6 +5,61 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## [0.8.0] - 2025-11-23
+
+### Added
+
+**Vector Database Support:**
+- Qdrant adapter with vector search capabilities
+- `QdrantAdapter` class for vector similarity search
+- `searchWithStats()` method with TONL conversion
+- Filter support and payload metadata handling
+- 22.4% token savings on 15 vector search results
+
+**Batch Query Operations:**
+- `batchQuery()` for parallel query execution
+- `batchQueryToTonl()` for batch TONL conversion
+- `batchQueryWithStats()` with aggregate statistics
+- 48% savings on 3 queries (25 rows total)
+- Works with PostgreSQL, MySQL, and SQLite
+
+**Query Analysis:**
+- `analyzeQuery()` method for pre-execution analysis
+- Estimates token savings and costs before running queries
+- Provides recommendations (use-tonl, marginal, use-json)
+- Real-world example: 50.8% savings prediction
+- Works with PostgreSQL, MySQL, SQLite
+
+**Schema Drift Monitoring:**
+- `trackSchema()` to capture schema baselines
+- `detectSchemaDrift()` to detect schema changes
+- Tracks new/removed columns and type changes
+- Calculates savings impact from schema changes
+- Automatic recommendations
+- Stores baselines in `.tonl-schemas/` directory
+- Real example: +50.3% savings from adding column
+
+**Infrastructure:**
+- `BaseVectorAdapter` for future vector database support
+- Batch operation types and interfaces
+- Query analysis types
+- Schema drift types
+- 162 tests total (up from 145)
+
+### Changed
+- Updated exports to include vector, batch, analysis, and drift types
+- Improved test coverage across all adapters
+- Enhanced SDK documentation
+
+### Performance
+- Batch queries execute in parallel
+- Aggregate token statistics across multiple queries
+- Vector search with efficient TONL conversion
+- Schema monitoring with minimal overhead
+
+---
+
 ## [0.7.0] - 2025-11-22
 
 ### Added
