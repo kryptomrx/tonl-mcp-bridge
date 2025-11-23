@@ -52,3 +52,16 @@ export {
   type TonlResult,
   type StatsResult,
 } from './sdk/index.js';
+
+// Vector database adapters (v0.8.0)
+export { QdrantAdapter } from './sdk/vector/qdrant.js';
+export { BaseVectorAdapter } from './sdk/vector/base-vector.js';
+export type {
+  QdrantConfig,
+  VectorSearchOptions,
+} from './sdk/vector/types.js';
+export type {
+  VectorQueryResult,
+  VectorTonlResult,
+  VectorStatsResult,
+} from './sdk/vector/qdrant.js';
