@@ -83,3 +83,33 @@ export interface QueryAnalysis {
   recommendation: 'use-tonl' | 'use-json' | 'marginal';
   costImpact: string;
 }
+
+// Schema Drift Monitoring
+export interface SchemaColumn {
+  name: string;
+  type: string;
+  nullable: boolean;
+}
+
+export interface SchemaBaseline {
+  tableName: string;
+  columns: SchemaColumn[];
+  rowCount: number;
+  capturedAt: string;
+}
+
+export interface TypeChange {
+  column: string;
+  oldType: string;
+  newType: string;
+}
+
+export interface SchemaDrift {
+  hasChanged: boolean;
+  newColumns: string[];
+  removedColumns: string[];
+  typeChanges: TypeChange[];
+  rowCountChange: number;
+  savingsImpact: number;
+  recommendation: string;
+}

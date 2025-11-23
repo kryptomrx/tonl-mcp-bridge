@@ -5,18 +5,24 @@ import type {
   QueryResult,
   TonlResult,
   StatsResult,
-  ModelName,          
+  ModelName,
   BatchQuery,
   BatchTonlResult,
   BatchStatsResult,
   BatchOptions,
   QueryAnalysis,
+  SchemaBaseline,
+  SchemaDrift,
+  SchemaColumn,
+  TypeChange,
 } from './types.js';
+import { SchemaStore } from './schema-store.js';
 
 export abstract class BaseAdapter {
   protected config: DatabaseConfig;
   protected connected: boolean = false;
-
+  protected schemaStore = new SchemaStore();
+  
   constructor(config: DatabaseConfig) {
     this.config = config;
   }
@@ -73,11 +79,8 @@ export abstract class BaseAdapter {
     }
   }
 
-  // Batch operations
   async batchQuery(queries: BatchQuery[]): Promise<QueryResult[]> {
-    const results = await Promise.all(
-      queries.map((q) => this.query(q.sql))
-    );
+    const results = await Promise.all(queries.map((q) => this.query(q.sql)));
     return results;
   }
 
@@ -112,7 +115,6 @@ export abstract class BaseAdapter {
       };
     });
 
-    // Calculate aggregate stats
     const aggregate = {
       totalQueries: queries.length,
       totalRows: batchResults.reduce((sum, r) => sum + r.rowCount, 0),
@@ -128,8 +130,7 @@ export abstract class BaseAdapter {
       savingsPercent: 0,
     };
 
-    aggregate.savedTokens =
-      aggregate.totalOriginalTokens - aggregate.totalCompressedTokens;
+    aggregate.savedTokens = aggregate.totalOriginalTokens - aggregate.totalCompressedTokens;
     aggregate.savingsPercent =
       aggregate.totalOriginalTokens > 0
         ? (aggregate.savedTokens / aggregate.totalOriginalTokens) * 100
@@ -140,13 +141,12 @@ export abstract class BaseAdapter {
       aggregate,
     };
   }
-  // Query Analysis
+
   async analyzeQuery(
     sql: string,
     name: string = 'data',
     options: { model?: ModelName } = {}
   ): Promise<QueryAnalysis> {
-    // Execute query to get row count and sample
     const result = await this.query(sql);
     const rowCount = result.rowCount;
     
@@ -162,14 +162,12 @@ export abstract class BaseAdapter {
       };
     }
 
-    // Convert to JSON and TONL for token counting
     const jsonStr = JSON.stringify(result.data);
     const tonlStr = jsonToTonl(result.data as Record<string, unknown>[], name);
     
     const model = options.model || 'gpt-5';
     const stats = calculateRealSavings(jsonStr, tonlStr, model);
 
-    // Determine recommendation
     let recommendation: 'use-tonl' | 'use-json' | 'marginal';
     if (stats.savingsPercent > 30) {
       recommendation = 'use-tonl';
@@ -179,7 +177,6 @@ export abstract class BaseAdapter {
       recommendation = 'marginal';
     }
 
-    // Calculate cost impact (GPT-4 pricing: $3/1M input tokens)
     const costPerToken = 3 / 1_000_000;
     const costSaved = stats.savedTokens * costPerToken;
 
@@ -192,5 +189,114 @@ export abstract class BaseAdapter {
       recommendation,
       costImpact: `$${costSaved.toFixed(6)}`,
     };
+  }
+
+  async trackSchema(tableName: string): Promise<void> {
+    const sampleResult = await this.query(`SELECT * FROM ${tableName} LIMIT 1`);
+    const columns = this.extractSchema(sampleResult.data);
+    
+    const countResult = await this.query(`SELECT COUNT(*) as count FROM ${tableName}`);
+    const rowCount = (countResult.data[0] as { count: number }).count;
+    
+    const baseline: SchemaBaseline = {
+      tableName,
+      columns,
+      rowCount,
+      capturedAt: new Date().toISOString(),
+    };
+
+    await this.schemaStore.save(baseline);
+  }
+
+  async detectSchemaDrift(tableName: string): Promise<SchemaDrift> {
+    const baseline = await this.schemaStore.load(tableName);
+    
+    if (!baseline) {
+      throw new Error(`No baseline found for table ${tableName}. Run trackSchema() first.`);
+    }
+
+    const sampleResult = await this.query(`SELECT * FROM ${tableName} LIMIT 1`);
+    const currentColumns = this.extractSchema(sampleResult.data);
+
+    const countResult = await this.query(`SELECT COUNT(*) as count FROM ${tableName}`);
+    const currentRowCount = (countResult.data[0] as { count: number }).count;
+
+    const baselineNames = new Set(baseline.columns.map((c: SchemaColumn) => c.name));
+    const currentNames = new Set(currentColumns.map((c: SchemaColumn) => c.name));
+
+    const newColumns = currentColumns
+      .filter(c => !baselineNames.has(c.name))
+      .map(c => c.name);
+
+    const removedColumns = baseline.columns
+      .filter((c: SchemaColumn) => !currentNames.has(c.name))
+      .map((c: SchemaColumn) => c.name);
+
+    const typeChanges: TypeChange[] = [];
+    for (const current of currentColumns) {
+      const base = baseline.columns.find((c: SchemaColumn) => c.name === current.name);
+      if (base && base.type !== current.type) {
+        typeChanges.push({
+          column: current.name,
+          oldType: base.type,
+          newType: current.type,
+        });
+      }
+    }
+
+    const hasChanged = newColumns.length > 0 || 
+                       removedColumns.length > 0 || 
+                       typeChanges.length > 0;
+
+    let savingsImpact = 0;
+    if (hasChanged) {
+      const oldAnalysis = await this.analyzeBaseline(baseline);
+      const newAnalysis = await this.analyzeQuery(`SELECT * FROM ${tableName}`, tableName);
+      savingsImpact = newAnalysis.potentialSavingsPercent - oldAnalysis;
+    }
+
+    let recommendation = 'Schema unchanged';
+    if (hasChanged) {
+      if (savingsImpact < -10) {
+        recommendation = 'Schema change reduced savings significantly. Consider optimization.';
+      } else if (savingsImpact > 10) {
+        recommendation = 'Schema change improved savings. Update baseline.';
+      } else {
+        recommendation = 'Schema changed but savings impact is minimal.';
+      }
+    }
+
+    return {
+      hasChanged,
+      newColumns,
+      removedColumns,
+      typeChanges,
+      rowCountChange: currentRowCount - baseline.rowCount,
+      savingsImpact,
+      recommendation,
+    };
+  }
+
+  async updateSchemaBaseline(tableName: string): Promise<void> {
+    await this.trackSchema(tableName);
+  }
+
+  private extractSchema(data: unknown[]): SchemaColumn[] {
+    if (data.length === 0) return [];
+    
+    const sample = data[0] as Record<string, unknown>;
+    return Object.entries(sample).map(([name, value]) => ({
+      name,
+      type: typeof value,
+      nullable: value === null,
+    }));
+  }
+
+  private async analyzeBaseline(baseline: SchemaBaseline): Promise<number> {
+    const rowCount = baseline.rowCount;
+    
+    if (rowCount < 5) return 0;
+    if (rowCount < 10) return 20;
+    return 40;
   }
 }

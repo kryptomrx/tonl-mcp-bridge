@@ -12,6 +12,11 @@ export type {
   BatchTonlResult,
   BatchStatsResult,
   BatchOptions,
+  QueryAnalysis,
+  SchemaBaseline,
+  SchemaDrift,
+  SchemaColumn,
+  TypeChange,
 } from './adapters/types.js';
 export { DatabaseError } from './adapters/types.js';
 

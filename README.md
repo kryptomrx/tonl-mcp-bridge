@@ -458,6 +458,54 @@ console.log('Recommendation:', analysis.recommendation);
 
 ---
 
+### Schema Drift Monitoring
+
+Track schema changes and their impact on token savings.
+```typescript
+import { PostgresAdapter } from 'tonl-mcp-bridge';
+
+const db = new PostgresAdapter(config);
+await db.connect();
+
+// Track baseline
+await db.trackSchema('users');
+
+// Later, detect drift
+const drift = await db.detectSchemaDrift('users');
+
+console.log('Schema changed:', drift.hasChanged);
+console.log('New columns:', drift.newColumns);
+console.log('Removed columns:', drift.removedColumns);
+console.log('Type changes:', drift.typeChanges);
+console.log('Savings impact:', drift.savingsImpact + '%');
+console.log('Recommendation:', drift.recommendation);
+
+// Update baseline if needed
+if (drift.hasChanged) {
+  await db.updateSchemaBaseline('users');
+}
+
+// Output:
+// Schema changed: true
+// New columns: ['status']
+// Removed columns: []
+// Type changes: []
+// Savings impact: 50.3%
+// Recommendation: Schema change improved savings. Update baseline.
+```
+
+**Features:**
+- Detects new/removed columns
+- Tracks type changes
+- Calculates savings impact
+- Provides recommendations
+- Stores baselines locally in `.tonl-schemas/`
+
+**Works with:**
+- PostgreSQL
+- MySQL
+- SQLite
+
 ## API Reference
 
 ### Core Functions
