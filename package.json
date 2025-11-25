@@ -67,6 +67,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.22.0",
     "@qdrant/js-client-rest": "^1.16.0",
+    "@zilliz/milvus2-sdk-node": "^2.6.5",
     "better-sqlite3": "^12.4.6",
     "chokidar": "^4.0.3",
     "cli-progress": "^3.12.0",
