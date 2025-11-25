@@ -1,10 +1,10 @@
-import type { QdrantConfig } from './types.js';
+import type { VectorDBConfig } from './types.js';
 
 export abstract class BaseVectorAdapter {
   protected connected = false;
-  protected config: QdrantConfig;
+  protected config: VectorDBConfig;
 
-  constructor(config: QdrantConfig) {
+  constructor(config: VectorDBConfig) {
     this.config = config;
   }
 
@@ -15,7 +15,7 @@ export abstract class BaseVectorAdapter {
     return this.connected;
   }
 
-  getConfig(): QdrantConfig {
+  getConfig(): VectorDBConfig {
     return { ...this.config };
   }
 }

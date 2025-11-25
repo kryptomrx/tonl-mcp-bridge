@@ -22,9 +22,11 @@ export { DatabaseError } from './adapters/types.js';
 
 // Vector databases
 export { QdrantAdapter } from './vector/qdrant.js';
+export { MilvusAdapter } from './vector/milvus.js';
 export { BaseVectorAdapter } from './vector/base-vector.js';
 export type {
   QdrantConfig,
+  MilvusConfig, 
   VectorSearchOptions,
 } from './vector/types.js';
 export type {
