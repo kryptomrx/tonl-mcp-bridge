@@ -76,7 +76,10 @@ function formatNestedValue(value: unknown): string {
 export function jsonToTonl(
   data: Record<string, unknown>[],
   name: string = 'data',
-  options: { flattenNested?: boolean } = {}
+  options: { 
+    flattenNested?: boolean;
+    anonymize?: string[]; // <-- NEU: Liste von Keys, die maskiert werden
+  } = {}
 ): string {
   if (!Array.isArray(data)) {
     throw new TonlValidationError('Input must be an array of objects');
@@ -89,10 +92,18 @@ export function jsonToTonl(
     const processedData = options.flattenNested ? data.map((obj) => flattenObject(obj)) : data;
     const schema = validateAndMergeSchemas(processedData);
     const header = buildTonlHeader(name, data.length, schema);
+    
+    // Set für schnelleren Lookup
+    const sensitiveKeys = new Set(options.anonymize || []);
 
     const rows = processedData.map((obj, index) => {
       try {
         const values = Object.keys(schema).map((key) => {
+          // 🛡️ PRIVACY CHECK
+          if (sensitiveKeys.has(key)) {
+            return '"[REDACTED]"';
+          }
+
           const value = obj[key];
           const type = schema[key];
           
@@ -101,7 +112,6 @@ export function jsonToTonl(
           }
           return formatValue(value);
         });
-        // FIX: Ensure indentation (2 spaces) and comma separation with space
         return '  ' + values.join(', ');
       } catch (error) {
         throw new TonlSchemaError(`Error formatting row ${index + 1}`, { error });

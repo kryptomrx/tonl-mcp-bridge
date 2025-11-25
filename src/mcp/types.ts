@@ -41,11 +41,11 @@ export const ConvertToTonlSchema = z.object({
       optimize: z.boolean().default(true),
       flattenNested: z.boolean().default(false),
       includeStats: z.boolean().default(true),
+      anonymize: z.array(z.string()).optional(), 
     })
     .optional()
     .default({}),
 });
-
 export type ConvertToTonlInput = z.infer<typeof ConvertToTonlSchema>;
 
 /**
@@ -104,3 +104,4 @@ export interface ToolResponse<T = unknown> {
     savingsPercent?: number;
   };
 }
+
