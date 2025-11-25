@@ -1,3 +1,5 @@
+// FIX: Use static import instead of require for ESM compatibility
+import { TikTokenAdapter } from '../core/tokenizer/tiktoken-adapter.js';
 import { tokenManager } from '../core/tokenizer/manager.js';
 
 export type ModelName =
@@ -11,13 +13,13 @@ export type ModelName =
   // Anthropic - Variations to satisfy compiler and user inputs
   | 'claude-3-opus'
   | 'claude-opus-4'
-  | 'claude-4-opus'      // Added to fix build error
+  | 'claude-4-opus'
   | 'claude-opus-4.1'
   | 'claude-opus-4.5'
   | 'claude-sonnet-3.5'
-  | 'claude-3.5-sonnet'  // Added variation
+  | 'claude-3.5-sonnet'
   | 'claude-sonnet-4.5'
-  | 'claude-4-sonnet'    // Added to fix build error
+  | 'claude-4-sonnet'
   // Google
   | 'gemini-3-pro-preview'
   | 'gemini-2.5-pro'
@@ -46,7 +48,6 @@ export function calculateRealSavings(
   savingsPercent: number;
   model: string;
 } {
-  const { TikTokenAdapter } = require('../core/tokenizer/tiktoken-adapter.js');
   const adapter = new TikTokenAdapter();
 
   const originalResult = adapter.count(original, model);

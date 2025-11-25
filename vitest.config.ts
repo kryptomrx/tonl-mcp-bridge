@@ -4,6 +4,8 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    // FIX: Prevent segmentation faults with native modules (sqlite3, milvus)
+    pool: 'forks',
     exclude: [
       '**/node_modules/**',
       '**/dist/**',
