@@ -1,0 +1,14 @@
+node_modules
+dist
+coverage
+tests
+examples
+.git
+.github
+.vscode
+.idea
+*.log
+README.md
+docs
+vitest.config.ts
+eslint.config.js
