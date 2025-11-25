@@ -4,6 +4,32 @@
 
 import z from 'zod';
 
+// Definitive list of supported models (Sync with tokenizer.ts)
+export const VALID_MODELS = [
+  // OpenAI
+  'gpt-5',
+  'gpt-4o',
+  'gpt-4o-mini',
+  'gpt-4',
+  'gpt-4-turbo',
+  'gpt-3.5-turbo',
+  
+  // Anthropic
+  'claude-opus-4.5',
+  'claude-opus-4.1',
+  'claude-opus-4',
+  'claude-3-opus',
+  'claude-sonnet-4.5',
+  'claude-sonnet-3.5',
+  
+  // Google
+  'gemini-3-pro-preview',
+  'gemini-2.5-pro',
+  'gemini-2.5-flash',
+  'gemini-1.5-pro',
+  'gemini-1.5-flash'
+] as const;
+
 /**
  * Convert to TONL tool input schema
  */
@@ -48,18 +74,7 @@ export type ValidateSchemaInput = z.infer<typeof ValidateSchemaSchema>;
 export const CalculateSavingsSchema = z.object({
   jsonData: z.string(),
   tonlData: z.string(),
-  model: z
-    .enum([
-      'gpt-5',
-      'gpt-4',
-      'gpt-3.5-turbo',
-      'claude-4-opus',
-      'claude-4-sonnet',
-      'claude-sonnet-4.5',
-      'gemini-2.5-pro',
-      'gemini-2.5-flash',
-    ])
-    .default('gpt-5'),
+  model: z.enum(VALID_MODELS).default('gpt-5'),
 });
 
 export type CalculateSavingsInput = z.infer<typeof CalculateSavingsSchema>;

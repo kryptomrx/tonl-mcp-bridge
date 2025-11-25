@@ -4,7 +4,7 @@
  */
 
 import { calculateRealSavings, ModelName } from '../../utils/tokenizer.js';
-import { CalculateSavingsInput, ToolResponse } from '../types.js';
+import { CalculateSavingsInput, ToolResponse, VALID_MODELS } from '../types.js';
 
 export const CALCULATE_SAVINGS_TOOL = {
   name: 'calculate_savings',
@@ -23,16 +23,8 @@ export const CALCULATE_SAVINGS_TOOL = {
       },
       model: {
         type: 'string',
-        enum: [
-          'gpt-5',
-          'gpt-4',
-          'gpt-3.5-turbo',
-          'claude-4-opus',
-          'claude-4-sonnet',
-          'claude-sonnet-4.5',
-          'gemini-2.5-pro',
-          'gemini-2.5-flash',
-        ],
+        // Spread the constant array to create a mutable array for JSON schema
+        enum: [...VALID_MODELS],
         description: 'LLM model to use for token counting',
         default: 'gpt-5',
       },

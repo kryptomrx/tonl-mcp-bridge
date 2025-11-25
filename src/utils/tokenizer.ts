@@ -1,44 +1,40 @@
-import { encodingForModel } from 'js-tiktoken';
+import { tokenManager } from '../core/tokenizer/manager.js';
 
 export type ModelName =
+  // OpenAI
   | 'gpt-5'
-  | 'gpt-5.1'
-  | 'gpt-5-thinking'
+  | 'gpt-4o'
+  | 'gpt-4o-mini'
   | 'gpt-4'
   | 'gpt-4-turbo'
   | 'gpt-3.5-turbo'
-  | 'claude-4-opus'
-  | 'claude-4-sonnet'
-  | 'claude-sonnet-4.5'
+  // Anthropic - Variations to satisfy compiler and user inputs
   | 'claude-3-opus'
-  | 'claude-3-sonnet'
+  | 'claude-opus-4'
+  | 'claude-4-opus'      // Added to fix build error
+  | 'claude-opus-4.1'
+  | 'claude-opus-4.5'
+  | 'claude-sonnet-3.5'
+  | 'claude-3.5-sonnet'  // Added variation
+  | 'claude-sonnet-4.5'
+  | 'claude-4-sonnet'    // Added to fix build error
+  // Google
+  | 'gemini-3-pro-preview'
   | 'gemini-2.5-pro'
   | 'gemini-2.5-flash'
-  | 'gemini-pro'
-  | 'grok-3'
-  | 'deepseek-r1'
-  | 'llama-4';
+  | 'gemini-1.5-pro'
+  | 'gemini-1.5-flash';
 
+/**
+ * @deprecated Use tokenManager directly for new implementations
+ */
 export function countTokens(text: string, model: ModelName = 'gpt-5'): number {
-  try {
-    let encodingModel = model;
-
-    if (model.startsWith('claude') || model.startsWith('gemini') || 
-        model.startsWith('grok') || model.startsWith('deepseek') || 
-        model.startsWith('llama') || model.startsWith('gpt-5')) {
-      encodingModel = 'gpt-4';
-    }
-
-    const enc = encodingForModel(encodingModel as any);
-    const tokens = enc.encode(text);
-
-    return tokens.length;
-  } catch (error) {
-    console.warn('Tokenizer failed, using fallback:', error);
-    return Math.ceil(text.length / 4);
-  }
+  return Math.ceil(text.length / 4);
 }
 
+/**
+ * Calculate savings between original and compressed text
+ */
 export function calculateRealSavings(
   original: string,
   compressed: string,
@@ -50,16 +46,24 @@ export function calculateRealSavings(
   savingsPercent: number;
   model: string;
 } {
-  const originalTokens = countTokens(original, model);
-  const compressedTokens = countTokens(compressed, model);
+  const { TikTokenAdapter } = require('../core/tokenizer/tiktoken-adapter.js');
+  const adapter = new TikTokenAdapter();
+
+  const originalResult = adapter.count(original, model);
+  const compressedResult = adapter.count(compressed, model);
+
+  const originalTokens = originalResult.count;
+  const compressedTokens = compressedResult.count;
   const savedTokens = originalTokens - compressedTokens;
-  const savingsPercent = savedTokens > 0 ? (savedTokens / originalTokens) * 100 : 0;
+
+  const savingsPercent =
+    originalTokens > 0 ? (savedTokens / originalTokens) * 100 : 0;
 
   return {
     originalTokens,
     compressedTokens,
     savedTokens,
     savingsPercent: Math.round(savingsPercent * 10) / 10,
-    model
+    model,
   };
 }
