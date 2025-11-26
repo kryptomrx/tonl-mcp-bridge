@@ -8,6 +8,166 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [0.9.0] - 2025-11-26
+
+### Added
+
+**MCP Server:**
+- HTTP/SSE transport for Model Context Protocol
+- Bearer token authentication via `TONL_AUTH_TOKEN` environment variable
+- Session management with cryptographically secure UUIDs (`crypto.randomUUID()`)
+- Graceful shutdown handling for SIGINT and SIGTERM signals
+- Three MCP tools:
+  - `convert_to_tonl` - Convert JSON/YAML to TONL format
+  - `parse_tonl` - Parse TONL back to JSON
+  - `calculate_savings` - Calculate token savings between formats
+- 50MB payload limit for large dataset handling
+- Entry point: `npx tonl-mcp-server` (HTTP on port 3000)
+
+**Milvus Vector Database:**
+- Full Milvus integration with `@zilliz/milvus2-sdk-node`
+- `MilvusAdapter` class with complete API support
+- Methods:
+  - `connect()` and `disconnect()` for connection management
+  - `search()` for vector similarity search
+  - `searchToTonl()` for automatic TONL conversion
+  - `searchWithStats()` for token usage statistics
+  - `createCollection()` for collection management
+  - `insert()` for vector data ingestion
+- Consistency level support: Strong, Bounded, Session, Eventually
+- Filter expression support for metadata queries
+- Vector wrapping for batch compatibility
+- Production-ready error handling
+
+**Privacy & Compliance:**
+- Field-level data anonymization via `anonymize` option in `jsonToTonl()`
+- Redacts specified fields with `"[REDACTED]"` placeholder
+- Set-based key lookup for O(1) performance
+- GDPR and HIPAA compliance support
+- Example: `jsonToTonl(data, 'users', { anonymize: ['email', 'ssn'] })`
+
+**Tokenizer Modernization:**
+- Refactored to `ITokenizer` interface for extensibility
+- `TokenManager` singleton for centralized token counting
+- `TikTokenAdapter` with smart model mapping:
+  - Claude models → gpt-4o tokenizer
+  - Gemini models → gpt-4o tokenizer
+  - GPT-5 → gpt-4o tokenizer
+- Fallback to naive character counting for unknown models
+- Support for:
+  - GPT-5, GPT-4o, GPT-4o-mini, GPT-4, GPT-3.5-turbo
+  - Claude Opus 4.5, Claude Opus 4.1, Claude Sonnet 4.5
+  - Gemini 2.5 Pro, Gemini 2.5 Flash, Gemini 1.5 Pro
+- Returns `method` field: 'exact' for tiktoken, 'estimated' for fallback
+
+**LLM Integration:**
+- `TONL_SYSTEM_PROMPT` constant for explaining TONL format to LLMs
+- `buildTonlPrompt(tonlData, userQuery)` helper function
+- Supports TONL v2.0 features including optimization directives
+- Includes examples for with/without types and with optimization
+
+**Infrastructure:**
+- Docker support with multi-stage builds
+- Dockerfile with Node 20 Alpine (~150MB image size)
+- Non-root user for security
+- docker-compose.yml for easy deployment
+- GitHub Actions workflow for automated testing and Docker publishing
+- 167 test cases (up from 162)
+
+### Changed
+
+**Breaking Changes:**
+- MCP server transport changed from stdio to HTTP/SSE
+- Previous: Stdio transport with direct execution
+- Current: HTTP server on port 3000 with Bearer token authentication
+- Migration: Set `TONL_AUTH_TOKEN` environment variable and use `npx tonl-mcp-server`
+
+**Non-Breaking Changes:**
+- All library APIs remain backward compatible
+- CLI tool unchanged
+- Core conversion functions unchanged
+
+### Fixed
+
+- Server architecture: Proper separation of server startup and export
+- Auto-start guard in server.ts using `fileURLToPath` check
+- Milvus consistency level enum mapping corrected
+- Session ID generation now uses `crypto.randomUUID()` instead of hardcoded values
+- Test stability improvements with proper async/await handling
+- Vector wrapping for Milvus batch operations
+
+### Performance
+
+- Set-based anonymization with O(1) field lookup
+- Efficient token counting with centralized TokenManager
+- Connection pooling support in vector database adapters
+- Graceful shutdown prevents resource leaks
+
+### Migration Guide
+
+**From v0.8.0 to v0.9.0:**
+
+**MCP Server Users:**
+```bash
+# OLD (v0.8.0 - stdio)
+tonl-mcp-server
+
+# NEW (v0.9.0 - HTTP/SSE)
+export TONL_AUTH_TOKEN=your-secure-token
+npx tonl-mcp-server
+# Server runs on http://localhost:3000
+```
+
+**Library Users:**
+No changes required. All existing code continues to work.
+
+**Vector Database Users:**
+New Milvus adapter available:
+```typescript
+import { MilvusAdapter } from 'tonl-mcp-bridge/sdk/vector';
+
+const milvus = new MilvusAdapter({
+  address: 'localhost:19530',
+  username: 'root',
+  password: 'milvus'
+});
+
+await milvus.connect();
+const result = await milvus.searchToTonl('collection', vector, { limit: 10 });
+```
+
+**Privacy Features:**
+Add anonymization to existing code:
+```typescript
+// Before
+const tonl = jsonToTonl(data, 'users');
+
+// After (with anonymization)
+const tonl = jsonToTonl(data, 'users', {
+  anonymize: ['email', 'ssn', 'phone']
+});
+```
+
+### Security
+
+- Bearer token authentication required in production (set `TONL_AUTH_TOKEN`)
+- Cryptographically secure session IDs
+- Non-root Docker container user
+- Environment variable configuration (no hardcoded secrets)
+
+### Documentation
+
+- New guides for MCP Server setup and usage
+- Milvus integration documentation
+- Privacy and compliance guide
+- Docker deployment instructions
+- Updated API reference for all new features
+- Migration guide from v0.8.0
+
+---
+
+
+
 ## [0.8.0] - 2025-11-23
 
 ### Added

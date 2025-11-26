@@ -1,14 +1,68 @@
+# Dependencies
 node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock 2.json
+
+# Build output
 dist
+
+# Testing
 coverage
 tests
+*.test.ts
+*.spec.ts
+vitest.config.ts
+
+# Documentation
+README.md
+CHANGELOG.md
+CONTRIBUTING.md
+CODE_OF_CONDUCT.md
+docs
+
+# Examples & Benchmarks
 examples
-.git
-.github
+benchmarks
+
+# Environment files (keep .env.example)
+.env
+.env.*
+!.env.example
+
+# IDE & Editors
 .vscode
 .idea
-*.log
-README.md
-docs
-vitest.config.ts
+*.swp
+*.swo
+*.swn
+.editorconfig
+
+# Git
+.git
+.github
+.gitignore
+.githooks
+.gitattributes
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Linting & Formatting
+.eslintrc*
 eslint.config.js
+.prettierrc
+.prettierignore
+
+# CI/CD (optional, depends on workflow)
+.travis.yml
+.gitlab-ci.yml
+azure-pipelines.yml
+
+# Misc
+*.log
+.npmignore
+claude-4

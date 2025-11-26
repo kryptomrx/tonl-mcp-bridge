@@ -4,19 +4,27 @@
 
 [![npm version](https://img.shields.io/npm/v/tonl-mcp-bridge.svg)](https://www.npmjs.com/package/tonl-mcp-bridge)
 [![npm downloads](https://img.shields.io/npm/dm/tonl-mcp-bridge.svg)](https://www.npmjs.com/package/tonl-mcp-bridge)
-[![Tests](https://img.shields.io/badge/tests-39%20passing-brightgreen)](https://github.com/kryptomrx/tonl-mcp-bridge)
+[![Tests](https://img.shields.io/badge/tests-167%20passing-brightgreen)](https://github.com/kryptomrx/tonl-mcp-bridge)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)](https://www.typescriptlang.org/)
 [![License](https://img.shields.io/npm/l/tonl-mcp-bridge.svg)](https://github.com/kryptomrx/tonl-mcp-bridge/blob/main/LICENSE)
 
 ## What is this?
 
-A TypeScript library and CLI tool that converts JSON/YAML data to TONL (Token Optimized Natural Language) format, reducing token usage for LLM context windows by 40-60%.
+A TypeScript library, CLI tool, and MCP server that converts JSON/YAML data to TONL (Token Optimized Natural Language) format, reducing token usage for LLM context windows by 40-60%.
 
 Perfect for:
 - 🤖 RAG (Retrieval-Augmented Generation) systems
 - 📊 MCP (Model Context Protocol) servers  
 - 💬 AI chat applications with large context needs
+- 🗄️ Vector database query optimization (Milvus, Qdrant)
 - 📝 Prompt libraries and templates
+
+**Not suitable for:**
+- Single objects (header overhead makes it inefficient)
+- Highly inconsistent schemas
+- Systems that require standard JSON output
+
+[📚 Read full documentation](https://tonl-mcp-bridge-docs.vercel.app/)
 
 ## The Problem
 
@@ -51,34 +59,53 @@ data[2]{id:i32,name:str,age:i32,email:str,active:bool}:
   2, "Bob Smith", 30, bob@example.com, false
 ```
 
-**75 tokens** ✅
+**75 tokens** 
 
 **Result: 36.4% token savings!** (scales to 60%+ with larger datasets)
 
 ## Features
 
-✅ **Bidirectional Conversion**
+ **Bidirectional Conversion**
 - JSON ↔ TONL
 - YAML ↔ TONL
 - Lossless round-trip conversion
 
-✅ **Smart Handling**
+ **Smart Handling**
 - Automatic schema detection
 - Smart quote handling (only when needed)
 - All primitive types supported (string, number, boolean, null)
 
-✅ **CLI Tool**
+ **CLI Tool**
 - Convert files from command line
 - Auto-detect format based on extension (.json, .yaml, .yml, .tonl)
 - Optional token savings statistics
 
-✅ **Type Safety**
+ **MCP Server** (New in v0.9.0)
+- HTTP/SSE transport for remote connections
+- Bearer token authentication
+- Session management
+- Graceful shutdown handling
+- [📖 MCP Server Guide](https://tonl-mcp-bridge-docs.vercel.app/guide/mcp-server)
+
+ **Vector Database Integration** (New in v0.9.0)
+- Milvus adapter with automatic TONL conversion
+- Qdrant adapter with search optimization
+- Built-in token statistics
+- [📖 Milvus Guide](https://tonl-mcp-bridge-docs.vercel.app/guide/milvus) | [📖 Qdrant Guide](https://tonl-mcp-bridge-docs.vercel.app/guide/qdrant)
+
+ **Privacy & Compliance** (New in v0.9.0)
+- Field-level data anonymization
+- GDPR/HIPAA-ready redaction
+- Configurable sensitive field masking
+- [📖 Privacy Guide](https://tonl-mcp-bridge-docs.vercel.app/guide/privacy)
+
+ **Type Safety**
 - Full TypeScript support
 - Comprehensive type definitions
 - Runtime type checking
 
-✅ **Battle Tested**
-- 39/39 unit tests passing
+ **Battle Tested**
+- 167/167 unit tests passing
 - Edge cases handled
 - Production-ready code
 
@@ -92,6 +119,21 @@ npm install -g tonl-mcp-bridge
 ### Local Installation (Library)
 ```bash
 npm install tonl-mcp-bridge
+```
+
+### MCP Server
+```bash
+npm install -g tonl-mcp-bridge
+export TONL_AUTH_TOKEN=your-secure-token
+npx tonl-mcp-server
+```
+
+### Docker
+```bash
+docker run -d \
+  -p 3000:3000 \
+  -e TONL_AUTH_TOKEN=your-token \
+  ghcr.io/kryptomrx/tonl-mcp-bridge:latest
 ```
 
 ## CLI Usage
@@ -202,6 +244,50 @@ const savings = calculateSavings(jsonStr, tonlStr);
 console.log(`Saved ${savings.savingsPercent}% tokens!`);
 ```
 
+### Vector Database Integration (New in v0.9.0)
+```typescript
+import { MilvusAdapter } from 'tonl-mcp-bridge/sdk/vector';
+
+const milvus = new MilvusAdapter({
+  address: 'localhost:19530',
+  username: 'root',
+  password: 'milvus'
+});
+
+await milvus.connect();
+
+// Search with automatic TONL conversion
+const result = await milvus.searchToTonl(
+  'documents',
+  queryEmbedding,
+  { limit: 10 }
+);
+
+console.log(result.tonl);
+console.log(`Saved ${result.stats.savingsPercent}% tokens`);
+```
+
+[📖 See full vector database documentation](https://tonl-mcp-bridge-docs.vercel.app/guide/milvus)
+
+### Privacy & Anonymization (New in v0.9.0)
+```typescript
+import { jsonToTonl } from 'tonl-mcp-bridge';
+
+const users = [
+  { id: 1, name: 'Alice', email: 'alice@company.com', ssn: '123-45-6789' }
+];
+
+// Redact sensitive fields
+const tonl = jsonToTonl(users, 'users', {
+  anonymize: ['email', 'ssn']
+});
+
+// Output: users[1]{id:i32,name:str,email:str,ssn:str}:
+//   1, Alice, "[REDACTED]", "[REDACTED]"
+```
+
+[📖 See privacy documentation](https://tonl-mcp-bridge-docs.vercel.app/guide/privacy)
+
 ## Benchmarks
 
 | Dataset Size | JSON Tokens | TONL Tokens | Savings |
@@ -254,8 +340,8 @@ data[3]{role:str,context:str,tone:str,setting:str,goal:str}:
 - ~200KB TONL per response (60% smaller)
 - ~50K tokens per query
 - $1.50 per query
-- Daily cost: $1.5M 💰
-- Monthly savings: $67.5M 🤯
+- Daily cost: $1.5M 
+- Monthly savings: $67.5M 
 ```
 
 ## Development
@@ -286,6 +372,8 @@ npm run cli convert file.json
 - **Vitest** - Lightning fast unit testing
 - **Commander.js** - CLI framework
 - **js-yaml** - YAML parsing
+- **Express** - HTTP server (v0.9.0+)
+- **@modelcontextprotocol/sdk** - MCP integration (v0.9.0+)
 - **Node.js 18+** - Modern JavaScript runtime
 
 ## Roadmap
@@ -299,25 +387,47 @@ npm run cli convert file.json
   - [x] CLI tool
   - [x] npm package published
   
-- [ ] **Phase 2: Advanced Features**
-  - [ ] MCP Server integration
-  - [ ] Streaming conversion
-  - [ ] Batch processing
-  - [ ] VS Code extension
+- [x] **Phase 2: Advanced Features** (v0.6.0 - v0.9.0)
+  - [x] MCP Server integration
+  - [x] Vector database adapters (Milvus, Qdrant)
+  - [x] Privacy & anonymization
+  - [x] Batch processing
+  - [x] Query analysis
+  - [x] Schema drift detection
+  - [x] Docker support
   
-- [ ] **Phase 3: Production Infrastructure** 🚀
-  - [ ] Vector DB Proxy Layer
-  - [ ] MCP Bridge Server
-  - [ ] Serverless Functions (AWS Lambda, Cloudflare Workers)
-  - [ ] Custom Database Drivers
-  
-- [ ] **Phase 4: Enterprise Features**
-  - [ ] OpenTelemetry integration
+- [ ] **Phase 3: Production Infrastructure**
+  - [ ] Kubernetes manifests
+  - [ ] Health check endpoints
+  - [ ] Prometheus metrics
   - [ ] Grafana dashboards
-  - [ ] Cost attribution & analytics
-  - [ ] Real-time monitoring
   
-**Vision:** Scale to millions of queries/day with 60% token savings
+- [ ] **Phase 4: Ecosystem**
+  - [ ] VS Code extension
+  - [ ] Langchain integration
+  - [ ] LlamaIndex plugin
+  - [ ] Serverless deployments (AWS Lambda, Cloudflare Workers)
+  
+**Current Status:** Phase 2 complete! Production-ready for RAG systems and vector databases.
+
+[📖 View detailed roadmap](https://tonl-mcp-bridge-docs.vercel.app/guide/roadmap)
+
+## Documentation
+
+Full documentation available at: **https://tonl-mcp-bridge-docs.vercel.app/**
+
+**Guides:**
+- [Getting Started](https://tonl-mcp-bridge-docs.vercel.app/guide/getting-started)
+- [MCP Server](https://tonl-mcp-bridge-docs.vercel.app/guide/mcp-server)
+- [Milvus Integration](https://tonl-mcp-bridge-docs.vercel.app/guide/milvus)
+- [Qdrant Integration](https://tonl-mcp-bridge-docs.vercel.app/guide/qdrant)
+- [Privacy & Compliance](https://tonl-mcp-bridge-docs.vercel.app/guide/privacy)
+- [Token Savings](https://tonl-mcp-bridge-docs.vercel.app/guide/token-savings)
+
+**API Reference:**
+- [Core API](https://tonl-mcp-bridge-docs.vercel.app/api/core)
+- [Server API](https://tonl-mcp-bridge-docs.vercel.app/api/server)
+- [Vector Adapters](https://tonl-mcp-bridge-docs.vercel.app/api/vector)
 
 ## Contributing
 
@@ -337,6 +447,7 @@ MIT © [kryptomrx](https://github.com/kryptomrx)
 
 - **npm:** https://www.npmjs.com/package/tonl-mcp-bridge
 - **GitHub:** https://github.com/kryptomrx/tonl-mcp-bridge
+- **Documentation:** https://tonl-mcp-bridge-docs.vercel.app/
 - **Issues:** https://github.com/kryptomrx/tonl-mcp-bridge/issues
 
 ---

@@ -2,8 +2,7 @@
  * MCP Server exports
  */
 
-export { TonlMcpServer, createTonlMcpServer } from './server.js';
-export type {
+export { startHttpServer } from './server.js';export type {
   McpServerConfig,
   ToolResponse,
   ConvertToTonlInput,

@@ -21,8 +21,7 @@ export type { TypeName } from './core/type-detector.js';
 
 // MCP
 export {
-  TonlMcpServer,
-  createTonlMcpServer,
+  startHttpServer,
   type McpServerConfig,
   type ToolResponse,
   type ConvertToTonlInput,

@@ -43,5 +43,9 @@ USER tonl
 # Expose the MCP HTTP port
 EXPOSE 3000
 
-# Start the MCP HTTP/SSE Server
-CMD ["node", "dist/mcp/server.js"]
+# Health check (optional, requires /health endpoint in server)
+# HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+#   CMD node -e "require('http').get('http://localhost:3000/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))" || exit 1
+
+# Start the MCP HTTP/SSE Server via index.js (entry point with graceful shutdown)
+CMD ["node", "dist/mcp/index.js"]

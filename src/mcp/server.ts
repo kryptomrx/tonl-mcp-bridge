@@ -10,19 +10,10 @@ import {
 import { convertToTonlHandler } from './tools/convert.js';
 import { parseTonlHandler } from './tools/parse.js';
 import { calculateSavingsHandler } from './tools/calculate-savings.js';
-
-console.log("Starting TONL MCP Server (HTTP/SSE)...");
-
-const app = express();
-// Increase limit for large batch payloads
-app.use(express.json({ limit: '50mb' }));
+import { fileURLToPath } from 'url';
 
 // --- SECURITY CONFIGURATION ---
 const AUTH_TOKEN = process.env.TONL_AUTH_TOKEN;
-
-if (!AUTH_TOKEN) {
-  console.warn('⚠️  WARNING: No TONL_AUTH_TOKEN set in environment. Server is unsecured!');
-}
 
 // --- AUTH MIDDLEWARE ---
 const authMiddleware = (req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -46,6 +37,11 @@ const authMiddleware = (req: express.Request, res: express.Response, next: expre
   next();
 };
 
+const app = express();
+
+// Increase limit for large batch payloads
+app.use(express.json({ limit: '50mb' }));
+
 // Apply auth to all MCP routes
 app.use('/mcp', authMiddleware);
 
@@ -67,9 +63,8 @@ function createMcpServer(): McpServer {
   server.tool(
     'convert_to_tonl',
     'Convert JSON data to TONL format. Reduces token usage by 30-60%.',
-    ConvertToTonlSchema.shape, // Use Zod shape from types.ts
+    ConvertToTonlSchema.shape, 
     async (args) => {
-      // Validate args using the schema (double check)
       const validated = ConvertToTonlSchema.parse(args);
       const result = await convertToTonlHandler(validated);
       
@@ -195,13 +190,28 @@ app.post('/mcp', async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`🚀 TONL MCP Server listening on port ${PORT}`);
-  console.log(`   - SSE Stream: http://localhost:${PORT}/mcp`);
-  if (AUTH_TOKEN) {
-    console.log(`   🔒 Security: Enabled (Bearer Token required)`);
-  } else {
-    console.log(`   ⚠️ Security: Disabled`);
-  }
-});
+/**
+ * Starts the HTTP server.
+ * This function allows the server to be started programmatically (e.g. from index.ts).
+ */
+export function startHttpServer(port: number | string = 3000) {
+  const server = app.listen(port, () => {
+    console.log(`🚀 TONL MCP Server listening on port ${port}`);
+    console.log(`   - SSE Stream: http://localhost:${port}/mcp`);
+    
+    if (process.env.TONL_AUTH_TOKEN) {
+      console.log(`   🔒 Security: Enabled (Bearer Token required)`);
+    } else {
+      console.warn(`   ⚠️  Security: Disabled (No TONL_AUTH_TOKEN set)`);
+    }
+  });
+
+  return server;
+}
+
+// --- AUTO-START (Only if run directly) ---
+// This allows `node dist/mcp/server.js` to work as expected,
+// while `import { startHttpServer }` behaves as a library.
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  startHttpServer(process.env.PORT || 3000);
+}
