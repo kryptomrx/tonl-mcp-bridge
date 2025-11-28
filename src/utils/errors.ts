@@ -43,6 +43,21 @@ export class TonlTypeError extends TonlError {
   }
 }
 
+export class DriverNotFoundError extends TonlError {
+  constructor(
+    public readonly driverName: string,
+    public readonly installCommand: string
+  ) {
+    super(
+      `❌ Driver '${driverName}' not found.\n\n` +
+      `📦 Install it with:\n${installCommand}\n\n` +
+      `💡 This is an optional dependency. Only install if you need it.`,
+      'DRIVER_NOT_FOUND'
+    );
+    this.name = 'DriverNotFoundError';
+  }
+}
+
 /**
  * Helper to create detailed error messages
  */

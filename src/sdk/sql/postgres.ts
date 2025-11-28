@@ -1,4 +1,5 @@
-import { Pool } from 'pg';
+import type { Pool } from 'pg';
+import { createPostgresPool } from '../loaders/postgres-loader.js';
 import { BaseAdapter } from '../adapters/base.js';
 import { DatabaseConfig, QueryResult, DatabaseError } from '../adapters/types.js';
 
@@ -10,12 +11,10 @@ export class PostgresAdapter extends BaseAdapter {
   }
 
   async connect(): Promise<void> {
-    if (this.connected) {
-      return;
-    }
+    if (this.connected) return;
 
     try {
-      this.pool = new Pool({
+      this.pool = await createPostgresPool({
         host: this.config.host,
         port: this.config.port || 5432,
         database: this.config.database,
@@ -35,9 +34,7 @@ export class PostgresAdapter extends BaseAdapter {
   }
 
   async disconnect(): Promise<void> {
-    if (!this.pool) {
-      return;
-    }
+    if (!this.pool) return;
 
     try {
       await this.pool.end();

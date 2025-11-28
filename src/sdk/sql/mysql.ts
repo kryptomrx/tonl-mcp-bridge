@@ -1,4 +1,5 @@
-import mysql from 'mysql2/promise';
+import type mysql from 'mysql2/promise';
+import { createMySQLPool } from '../loaders/mysql-loader.js';
 import { BaseAdapter } from '../adapters/base.js';
 import { DatabaseConfig, QueryResult, DatabaseError } from '../adapters/types.js';
 
@@ -10,12 +11,10 @@ export class MySQLAdapter extends BaseAdapter {
   }
 
   async connect(): Promise<void> {
-    if (this.connected) {
-      return;
-    }
+    if (this.connected) return;
 
     try {
-      this.pool = mysql.createPool({
+      this.pool = await createMySQLPool({
         host: this.config.host,
         port: this.config.port || 3306,
         database: this.config.database,
@@ -37,9 +36,7 @@ export class MySQLAdapter extends BaseAdapter {
   }
 
   async disconnect(): Promise<void> {
-    if (!this.pool) {
-      return;
-    }
+    if (!this.pool) return;
 
     try {
       await this.pool.end();

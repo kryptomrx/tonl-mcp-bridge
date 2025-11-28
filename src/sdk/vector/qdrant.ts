@@ -1,4 +1,5 @@
-import { QdrantClient } from '@qdrant/js-client-rest';
+import type { QdrantClient } from '@qdrant/js-client-rest';
+import { createQdrantClient } from '../loaders/qdrant-loader.js';
 import { BaseVectorAdapter } from './base-vector.js';
 import { jsonToTonl } from '../../core/json-to-tonl.js';
 import { calculateRealSavings } from '../../utils/tokenizer.js';
@@ -28,22 +29,18 @@ export interface VectorStatsResult extends VectorTonlResult {
 
 export class QdrantAdapter extends BaseVectorAdapter {
   private client: QdrantClient | null = null;
-  // Fix 1: Declare specific config type for this class to avoid intersection errors with MilvusConfig
   protected declare config: QdrantConfig;
 
   constructor(config: QdrantConfig = {}) {
     super({
-      url:
-        config.url ||
-        `http://${config.host || 'localhost'}:${config.port || 6333}`,
+      url: config.url || `http://${config.host || 'localhost'}:${config.port || 6333}`,
       apiKey: config.apiKey,
     });
     this.config = this.getConfig() as QdrantConfig;
   }
 
   async connect(): Promise<void> {
-    // Fix 2: config properties are now safe to access
-    this.client = new QdrantClient({
+    this.client = await createQdrantClient({
       url: this.config.url!,
       apiKey: this.config.apiKey,
     });
@@ -66,7 +63,6 @@ export class QdrantAdapter extends BaseVectorAdapter {
       throw new Error('Database not connected');
     }
 
-    // Fix 3: Qdrant strictly expects object filters. If user passes a string (Milvus style), ignore it.
     const filterObj = typeof options.filter === 'object' ? options.filter : undefined;
 
     const searchResult = await this.client.search(collectionName, {

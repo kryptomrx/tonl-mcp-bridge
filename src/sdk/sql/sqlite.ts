@@ -1,4 +1,5 @@
-import Database from 'better-sqlite3';
+import type Database from 'better-sqlite3';
+import { createSQLiteDatabase } from '../loaders/sqlite-loader.js';
 import { BaseAdapter } from '../adapters/base.js';
 import { DatabaseConfig, QueryResult, DatabaseError } from '../adapters/types.js';
 
@@ -26,14 +27,15 @@ export class SQLiteAdapter extends BaseAdapter {
   }
 
   async connect(): Promise<void> {
-    if (this.connected) {
-      return;
-    }
+    if (this.connected) return;
 
     try {
-      this.db = new Database(this.sqliteConfig.filename, {
-        readonly: this.sqliteConfig.readonly || false,
-      });
+      this.db = await createSQLiteDatabase(
+        this.sqliteConfig.filename,
+        {
+          readonly: this.sqliteConfig.readonly || false,
+        }
+      );
       this.connected = true;
     } catch (error) {
       throw new DatabaseError(
@@ -45,9 +47,7 @@ export class SQLiteAdapter extends BaseAdapter {
   }
 
   async disconnect(): Promise<void> {
-    if (!this.db) {
-      return;
-    }
+    if (!this.db) return;
 
     try {
       this.db.close();
@@ -72,21 +72,19 @@ export class SQLiteAdapter extends BaseAdapter {
     try {
       const trimmedSql = sql.trim().toUpperCase();
 
-      // Check if it's a SELECT statement
       if (trimmedSql.startsWith('SELECT')) {
         const rows = this.db.prepare(sql).all();
         return {
           data: rows as T[],
           rowCount: rows.length,
         };
-      } else {
-        // For INSERT, UPDATE, DELETE, CREATE, etc.
-        const info = this.db.prepare(sql).run();
-        return {
-          data: [] as T[],
-          rowCount: info.changes || 0,
-        };
       }
+
+      const info = this.db.prepare(sql).run();
+      return {
+        data: [] as T[],
+        rowCount: info.changes || 0,
+      };
     } catch (error) {
       throw new DatabaseError(
         'Query execution failed',

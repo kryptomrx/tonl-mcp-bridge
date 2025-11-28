@@ -1,4 +1,6 @@
-import { MilvusClient, DataType, ConsistencyLevelEnum } from '@zilliz/milvus2-sdk-node';
+import type { MilvusClient } from '@zilliz/milvus2-sdk-node';
+import { DataType, ConsistencyLevelEnum } from '@zilliz/milvus2-sdk-node';
+import { createMilvusClient } from '../loaders/milvus-loader.js';
 import { BaseVectorAdapter } from './base-vector.js';
 import { jsonToTonl } from '../../core/json-to-tonl.js';
 import { calculateRealSavings } from '../../utils/tokenizer.js';
@@ -17,11 +19,10 @@ export class MilvusAdapter extends BaseVectorAdapter {
 
   async connect(): Promise<void> {
     try {
-      this.client = new MilvusClient({
+      this.client = await createMilvusClient({
         address: this.config.address,
         username: this.config.username,
         password: this.config.password,
-        ssl: this.config.ssl,
         token: this.config.token,
       });
 
@@ -49,7 +50,6 @@ export class MilvusAdapter extends BaseVectorAdapter {
       throw new Error('Database not connected');
     }
 
-    // FIX: Map string option to Milvus Enum
     let consistencyLevel = ConsistencyLevelEnum.Bounded;
     if (options.consistencyLevel === 'Strong') consistencyLevel = ConsistencyLevelEnum.Strong;
     if (options.consistencyLevel === 'Session') consistencyLevel = ConsistencyLevelEnum.Session;
@@ -59,7 +59,6 @@ export class MilvusAdapter extends BaseVectorAdapter {
 
     const searchParams = {
       collection_name: collectionName,
-      // FIX: Wrap vector in array for batch compatibility
       data: [vector],
       limit: options.limit || 10,
       output_fields: options.outputFields || ['*'],
