@@ -39,8 +39,12 @@ export interface MongoDBConfig extends BaseVectorConfig {
     serverSelectionTimeoutMS?: number;
     socketTimeoutMS?: number;
     connectTimeoutMS?: number;
+    retryWrites?: boolean;
+    retryReads?: boolean;
     [key: string]: any;
   };
+  maxRetries?: number;
+  batchSize?: number;
 }
 
 export interface VectorSearchOptions {
@@ -57,6 +61,11 @@ export interface MongoDBSearchOptions extends VectorSearchOptions {
   vectorPath?: string;
   preFilter?: Record<string, any>;
   exact?: boolean;
+}
+
+export interface MongoDBInsertOptions {
+  batchSize?: number;
+  ordered?: boolean;
 }
 
 export interface MongoDBHybridSearchOptions extends MongoDBSearchOptions {
@@ -93,4 +102,15 @@ export interface IndexRecommendation {
   type: 'vector' | 'filter' | 'text';
   reason: string;
   estimatedSpeedup?: string;
+}
+
+export interface VectorValidationOptions {
+  minLength?: number;
+  maxLength?: number;
+  allowEmpty?: boolean;
+}
+
+export interface CollectionNameValidationOptions {
+  maxLength?: number;
+  allowSpecialChars?: boolean;
 }
