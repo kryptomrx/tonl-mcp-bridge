@@ -8,6 +8,14 @@ import { loadMilvusDriver } from '../src/sdk/loaders/milvus-loader.js';
 import { loadPineconeDriver } from '../src/sdk/loaders/pinecone-loader.js';
 import { loadWeaviateDriver } from '../src/sdk/loaders/weaviate-loader.js';
 
+let isMongoDBAvailable = false;
+try {
+  await import('mongodb');
+  isMongoDBAvailable = true;
+} catch {
+  isMongoDBAvailable = false;
+}
+
 describe('Optional Dependencies - Loaders', () => {
   describe('Driver Loading', () => {
     it('should load PostgreSQL driver when installed', async () => {
@@ -36,6 +44,16 @@ describe('Optional Dependencies - Loaders', () => {
 
     it('should load Weaviate driver when installed', async () => {
       await expect(loadWeaviateDriver()).resolves.toBeDefined();
+    });
+
+    it('should load MongoDB driver when installed', async () => {
+      if (isMongoDBAvailable) {
+        const { loadMongoDBDriver } = await import('../src/sdk/loaders/mongodb-loader.js');
+        await expect(loadMongoDBDriver()).resolves.toBeDefined();
+      } else {
+        console.log('⏭️  Skipping: MongoDB not installed');
+        expect(true).toBe(true);
+      }
     });
   });
 
@@ -104,6 +122,11 @@ describe('Optional Dependencies - Loaders', () => {
       expect(typeof loadMilvusDriver).toBe('function');
       expect(typeof loadPineconeDriver).toBe('function');
       expect(typeof loadWeaviateDriver).toBe('function');
+      
+      if (isMongoDBAvailable) {
+        const { loadMongoDBDriver } = await import('../src/sdk/loaders/mongodb-loader.js');
+        expect(typeof loadMongoDBDriver).toBe('function');
+      }
     });
   });
 });

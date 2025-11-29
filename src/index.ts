@@ -63,3 +63,14 @@ export type {
 
 export { WeaviateAdapter } from './sdk/index.js';
 export type { WeaviateConfig } from './sdk/index.js';
+
+export { MongoDBAdapter } from './sdk/index.js';
+export type {
+  MongoDBConfig,
+  MongoDBSearchOptions,
+  MongoDBHybridSearchOptions,
+  CollectionTemplate,
+  NestedAnalysis,
+  CostBreakdown,
+  IndexRecommendation
+} from './sdk/index.js';

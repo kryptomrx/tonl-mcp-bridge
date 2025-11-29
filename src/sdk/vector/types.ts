@@ -1,70 +1,96 @@
-// Qdrant Configuration
-export interface QdrantConfig {
-  url?: string;
+export interface BaseVectorConfig {
+  metadata?: Record<string, any>;
+}
+
+export interface QdrantConfig extends BaseVectorConfig {
+  url: string;
   apiKey?: string;
-  host?: string;
+  https?: boolean;
   port?: number;
 }
 
-// Milvus Configuration
-export interface MilvusConfig {
-  address: string; // e.g. "localhost:19530"
+export interface MilvusConfig extends BaseVectorConfig {
+  address: string;
   username?: string;
   password?: string;
   ssl?: boolean;
-  token?: string; // Cloud token
+  token?: string;
 }
 
-// Unified Config Type
-export type VectorDBConfig = QdrantConfig | MilvusConfig;
-
-export interface VectorSearchOptions {
-  limit?: number;
-  scoreThreshold?: number;
-  /**
-   * Filter can be a Qdrant filter object or a Milvus boolean expression string
-   * e.g. Qdrant: { must: [{ key: "city", match: { value: "Berlin" } }] }
-   * e.g. Milvus: "city == 'Berlin'"
-   */
-  filter?: Record<string, unknown> | string;
-  withPayload?: boolean;
-  withVector?: boolean;
-  // Milvus specific
-  outputFields?: string[]; 
-  consistencyLevel?: 'Strong' | 'Session' | 'Bounded' | 'Eventually';
+export interface PineconeConfig extends BaseVectorConfig {
+  apiKey: string;
+  environment?: string;
+  indexHost?: string;
 }
 
-export interface VectorPoint {
-  id: string | number;
-  vector: number[];
-  payload?: Record<string, unknown>;
-}
-
-export interface VectorSearchResult {
-  id: string | number;
-  score: number;
-  payload?: Record<string, unknown>;
-  vector?: number[];
-}
-
-export interface PineconeConfig {
-  apiKey?: string;
-}
-
-export interface VectorSearchOptions {
-  limit?: number;
-  filter?: Record<string, unknown> | string;
-  scoreThreshold?: number;
-  withPayload?: boolean;
-  withVector?: boolean;
-  includeMetadata?: boolean;  
-  includeValues?: boolean;     
-  namespace?: string;          
-}
-
-export interface WeaviateConfig {
+export interface WeaviateConfig extends BaseVectorConfig {
   url?: string;
   apiKey?: string;
   scheme?: 'http' | 'https';
   host?: string;
+}
+
+export interface MongoDBConfig extends BaseVectorConfig {
+  uri: string;
+  database: string;
+  options?: {
+    maxPoolSize?: number;
+    minPoolSize?: number;
+    serverSelectionTimeoutMS?: number;
+    socketTimeoutMS?: number;
+    connectTimeoutMS?: number;
+    [key: string]: any;
+  };
+}
+
+export interface VectorSearchOptions {
+  limit?: number;
+  minScore?: number;
+  filter?: Record<string, any>;
+  select?: string[];
+  includeVector?: boolean;
+}
+
+export interface MongoDBSearchOptions extends VectorSearchOptions {
+  numCandidates?: number;
+  indexName?: string;
+  vectorPath?: string;
+  preFilter?: Record<string, any>;
+  exact?: boolean;
+}
+
+export interface MongoDBHybridSearchOptions extends MongoDBSearchOptions {
+  textQuery?: string;
+  vectorWeight?: number;
+  textWeight?: number;
+  textIndexName?: string;
+}
+
+export type CollectionTemplate = 
+  | 'rag-documents'
+  | 'product-catalog'
+  | 'user-profiles'
+  | 'semantic-cache';
+
+export interface NestedAnalysis {
+  hasNested: boolean;
+  maxDepth: number;
+  additionalSavings: number;
+  nestedFields: string[];
+}
+
+export interface CostBreakdown {
+  costBefore: string;
+  costAfter: string;
+  monthlySavings: string;
+  annualSavings: string;
+  percentageSaved: number;
+  queriesPerDay: number;
+}
+
+export interface IndexRecommendation {
+  field: string;
+  type: 'vector' | 'filter' | 'text';
+  reason: string;
+  estimatedSpeedup?: string;
 }

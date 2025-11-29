@@ -1,10 +1,16 @@
 export { QdrantAdapter } from './qdrant.js';
-export { BaseVectorAdapter } from './base-vector.js';
+export { BaseVectorAdapter } from './base.js';
+export { MongoDBAdapter } from './mongodb.js';
 export type {
-  QdrantConfig,
-  VectorSearchOptions,
-  VectorPoint,
-  VectorSearchResult,
+  BaseVectorConfig,
+  MongoDBConfig,
+  MongoDBSearchOptions,
+  MongoDBHybridSearchOptions,
+  CollectionTemplate,
+  NestedAnalysis,
+  CostBreakdown,
+  IndexRecommendation,
+  VectorSearchOptions
 } from './types.js';
 export type {
   VectorQueryResult,

@@ -40,3 +40,14 @@ export type { PineconeConfig } from './vector/types.js';
 
 export { WeaviateAdapter } from './vector/index.js';
 export type { WeaviateConfig } from './vector/types.js';
+
+export { MongoDBAdapter } from './vector/index.js';
+export type {
+  MongoDBConfig,
+  MongoDBSearchOptions,
+  MongoDBHybridSearchOptions,
+  CollectionTemplate,
+  NestedAnalysis,
+  CostBreakdown,
+  IndexRecommendation
+} from './vector/types.js';
