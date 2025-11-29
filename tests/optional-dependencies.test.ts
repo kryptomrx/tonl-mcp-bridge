@@ -94,10 +94,7 @@ describe('Optional Dependencies - Loaders', () => {
 
   describe('Error Messages', () => {
     it('should have helpful error messages in loaders', async () => {
-      // We can't test missing packages easily, but we can verify
-      // the error message structure would be correct
-      
-      // Verify loaders are properly exported
+
       expect(typeof loadPostgresDriver).toBe('function');
       expect(typeof loadMySQLDriver).toBe('function');
       expect(typeof loadSQLiteDriver).toBe('function');

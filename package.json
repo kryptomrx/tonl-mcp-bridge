@@ -81,7 +81,8 @@
     "mysql2": "^3.0.0",
     "better-sqlite3": ">=9.0.0",
     "@qdrant/js-client-rest": "^1.0.0",
-    "@zilliz/milvus2-sdk-node": "^2.0.0"
+    "@zilliz/milvus2-sdk-node": "^2.0.0",
+    "@pinecone-database/pinecone": "^6.0.0"
   },
   "peerDependenciesMeta": {
     "pg": {
@@ -97,6 +98,9 @@
       "optional": true
     },
     "@zilliz/milvus2-sdk-node": {
+      "optional": true
+    },
+    "@pinecone-database/pinecone": {
       "optional": true
     }
   },
@@ -123,6 +127,7 @@
     "mysql2": "^3.15.3",
     "better-sqlite3": "^12.4.6",
     "@qdrant/js-client-rest": "^1.16.0",
-    "@zilliz/milvus2-sdk-node": "^2.6.5"
+    "@zilliz/milvus2-sdk-node": "^2.6.5",
+    "@pinecone-database/pinecone": "^6.1.3"
   }
 }

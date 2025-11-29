@@ -46,3 +46,18 @@ export interface VectorSearchResult {
   payload?: Record<string, unknown>;
   vector?: number[];
 }
+
+export interface PineconeConfig {
+  apiKey?: string;
+}
+
+export interface VectorSearchOptions {
+  limit?: number;
+  filter?: Record<string, unknown> | string;
+  scoreThreshold?: number;
+  withPayload?: boolean;
+  withVector?: boolean;
+  includeMetadata?: boolean;  
+  includeValues?: boolean;     
+  namespace?: string;          
+}

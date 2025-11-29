@@ -11,3 +11,6 @@ export type {
   VectorTonlResult,
   VectorStatsResult,
 } from './qdrant.js';
+
+export { PineconeAdapter } from './pinecone.js';
+export type { PineconeConfig } from './types.js';
