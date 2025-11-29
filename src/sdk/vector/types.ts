@@ -61,3 +61,10 @@ export interface VectorSearchOptions {
   includeValues?: boolean;     
   namespace?: string;          
 }
+
+export interface WeaviateConfig {
+  url?: string;
+  apiKey?: string;
+  scheme?: 'http' | 'https';
+  host?: string;
+}

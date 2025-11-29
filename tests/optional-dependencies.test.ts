@@ -5,32 +5,37 @@ import { loadMySQLDriver } from '../src/sdk/loaders/mysql-loader.js';
 import { loadSQLiteDriver } from '../src/sdk/loaders/sqlite-loader.js';
 import { loadQdrantDriver } from '../src/sdk/loaders/qdrant-loader.js';
 import { loadMilvusDriver } from '../src/sdk/loaders/milvus-loader.js';
+import { loadPineconeDriver } from '../src/sdk/loaders/pinecone-loader.js';
+import { loadWeaviateDriver } from '../src/sdk/loaders/weaviate-loader.js';
 
 describe('Optional Dependencies - Loaders', () => {
   describe('Driver Loading', () => {
     it('should load PostgreSQL driver when installed', async () => {
-      // pg is in devDependencies, should load
       await expect(loadPostgresDriver()).resolves.toBeDefined();
     });
 
     it('should load MySQL driver when installed', async () => {
-      // mysql2 is in devDependencies, should load
       await expect(loadMySQLDriver()).resolves.toBeDefined();
     });
 
     it('should load SQLite driver when installed', async () => {
-      // better-sqlite3 is in devDependencies, should load
       await expect(loadSQLiteDriver()).resolves.toBeDefined();
     });
 
     it('should load Qdrant driver when installed', async () => {
-      // qdrant is in devDependencies, should load
       await expect(loadQdrantDriver()).resolves.toBeDefined();
     });
 
     it('should load Milvus driver when installed', async () => {
-      // milvus is in devDependencies, should load
       await expect(loadMilvusDriver()).resolves.toBeDefined();
+    });
+
+    it('should load Pinecone driver when installed', async () => {
+      await expect(loadPineconeDriver()).resolves.toBeDefined();
+    });
+
+    it('should load Weaviate driver when installed', async () => {
+      await expect(loadWeaviateDriver()).resolves.toBeDefined();
     });
   });
 
@@ -69,7 +74,6 @@ describe('Optional Dependencies - Loaders', () => {
       const driver1 = await loadSQLiteDriver();
       const driver2 = await loadSQLiteDriver();
       
-      // Should return same cached instance
       expect(driver1).toBe(driver2);
     });
 
@@ -80,7 +84,6 @@ describe('Optional Dependencies - Loaders', () => {
       await adapter1.connect();
       await adapter2.connect();
 
-      // Both should work with cached driver
       const result1 = await adapter1.query('SELECT 1 as test');
       const result2 = await adapter2.query('SELECT 2 as test');
 
@@ -94,12 +97,13 @@ describe('Optional Dependencies - Loaders', () => {
 
   describe('Error Messages', () => {
     it('should have helpful error messages in loaders', async () => {
-
       expect(typeof loadPostgresDriver).toBe('function');
       expect(typeof loadMySQLDriver).toBe('function');
       expect(typeof loadSQLiteDriver).toBe('function');
       expect(typeof loadQdrantDriver).toBe('function');
       expect(typeof loadMilvusDriver).toBe('function');
+      expect(typeof loadPineconeDriver).toBe('function');
+      expect(typeof loadWeaviateDriver).toBe('function');
     });
   });
 });

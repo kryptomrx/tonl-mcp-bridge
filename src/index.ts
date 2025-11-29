@@ -60,3 +60,6 @@ export type {
   BatchStatsResult,
   BatchOptions,
 } from './sdk/adapters/types.js';
+
+export { WeaviateAdapter } from './sdk/index.js';
+export type { WeaviateConfig } from './sdk/index.js';

@@ -14,3 +14,6 @@ export type {
 
 export { PineconeAdapter } from './pinecone.js';
 export type { PineconeConfig } from './types.js';
+
+export { WeaviateAdapter } from './weaviate.js';
+export type { WeaviateConfig } from './types.js';
