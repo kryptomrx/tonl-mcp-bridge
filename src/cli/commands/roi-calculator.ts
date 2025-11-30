@@ -29,37 +29,43 @@ export const LLM_PRICING: Record<string, LLMPricing> = {
     outputCostPer1M: 30.00,
     contextWindow: 128000
   },
-  'claude-opus-4': {
-    name: 'Claude Opus 4',
-    inputCostPer1M: 15.00,
-    outputCostPer1M: 75.00,
+  'claude-opus-4.5': {
+    name: 'Claude Opus 4.5',
+    inputCostPer1M: 5.00,
+    outputCostPer1M: 25.00,
     contextWindow: 200000
   },
-  'claude-sonnet-4': {
-    name: 'Claude Sonnet 4',
+  'claude-sonnet-4.5': {
+    name: 'Claude Sonnet 4.5',
     inputCostPer1M: 3.00,
     outputCostPer1M: 15.00,
     contextWindow: 200000
   },
-  'claude-haiku-4': {
-    name: 'Claude Haiku 4',
-    inputCostPer1M: 0.25,
-    outputCostPer1M: 1.25,
+  'claude-haiku-4.5': {
+    name: 'Claude Haiku 4.5',
+    inputCostPer1M: 1.00,
+    outputCostPer1M: 5.00,
     contextWindow: 200000
   },
-  'gemini-1.5-pro': {
-    name: 'Gemini 1.5 Pro',
+  'gemini-2.5-pro': {
+    name: 'Gemini 2.5 Pro',
     inputCostPer1M: 1.25,
-    outputCostPer1M: 5.00,
+    outputCostPer1M: 10.00,
     contextWindow: 2000000
   },
-  'gemini-1.5-flash': {
-    name: 'Gemini 1.5 Flash',
-    inputCostPer1M: 0.075,
-    outputCostPer1M: 0.30,
+  'gemini-2.0-flash': {
+    name: 'Gemini 2.0 Flash',
+    inputCostPer1M: 0.10,
+    outputCostPer1M: 0.40,
     contextWindow: 1000000
   }
 };
+
+// Pricing last updated: November 30, 2025
+// Sources:
+// - OpenAI: https://openai.com/api/pricing/
+// - Anthropic: https://docs.claude.com/en/docs/about-claude/pricing
+// - Google: https://ai.google.dev/gemini-api/docs/pricing
 
 export interface ROICalculation {
   // Input
