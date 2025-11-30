@@ -20,6 +20,12 @@ import { isLargeFile, getFileSizeMB } from '../utils/file-helpers.js';
 import { streamJsonToTonl } from '../core/streaming.js';
 import { startWatch } from './watch.js';
 import { batchConvert } from './batch.js';
+import {
+  calculateROI,
+  formatROI,
+  generateMarketingSummary,
+  listLLMModels
+} from './commands/roi-calculator.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -42,7 +48,6 @@ program
   .option('-v, --validate', 'Validate schema consistency')
   .action(async (input: string, output: string | undefined, options: any) => {
     try {
-      // Detect format based on file extension
       const isJsonInput = input.endsWith('.json');
       const isTonlInput = input.endsWith('.tonl');
       const isYamlInput = input.endsWith('.yaml') || input.endsWith('.yml');
@@ -64,7 +69,6 @@ program
 
         console.log('📄 Converting JSON → TONL...');
 
-        // Use streaming for large files
         if (isLargeFile(input)) {
           const sizeMB = getFileSizeMB(input).toFixed(2);
           console.log(`⚡ Large file detected (${sizeMB}MB) - using streaming mode`);
@@ -79,7 +83,6 @@ program
           const jsonData = JSON.parse(inputContent);
           if (options.validate) {
             console.log('🔍 Validating schema...');
-            // Schema validation already happens in jsonToTonl
             console.log('✅ Schema valid!');
           }
           if (!Array.isArray(jsonData)) {
@@ -92,7 +95,6 @@ program
             process.exit(1);
           }
 
-          // Progress bar for large datasets
           if (jsonData.length > 100) {
             const bar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
             console.log('⏳ Processing large dataset...');
@@ -109,7 +111,6 @@ program
           outputPath = output || input.replace('.json', '.tonl');
         }
       } else if (isYamlInput) {
-        // YAML → TONL
         inputContent = readFileSync(input, 'utf-8');
         const collectionName = options.name || 'data';
         outputContent = yamlToTonl(inputContent, collectionName);
@@ -117,11 +118,9 @@ program
 
         console.log('📄 Converting YAML → TONL...');
       } else {
-        // TONL → JSON or YAML
         inputContent = readFileSync(input, 'utf-8');
         const jsonData = tonlToJson(inputContent);
 
-        // Determine output format from output filename
         const wantsYaml = output && (output.endsWith('.yaml') || output.endsWith('.yml'));
 
         if (wantsYaml) {
@@ -135,7 +134,6 @@ program
         }
       }
 
-      // Write output file (if not already written by streaming)
       if (!isLargeFile(input) || !isJsonInput) {
         writeFileSync(outputPath, outputContent, 'utf-8');
       }
@@ -146,7 +144,6 @@ program
       // Show stats if requested
       if (options.stats) {
         try {
-          // Default model (can be changed with --model flag later)
           const model = options.model || 'gpt-5';
           const savings = calculateRealSavings(inputContent, outputContent, model);
 
@@ -230,5 +227,71 @@ program
       stats: options.stats,
     });
   });
+
+// ROI Calculator command
+program
+  .command('roi')
+  .description('Calculate ROI and cost savings from token optimization')
+  .option('-b, --tokens-before <n>', 'Tokens before optimization (per query)', parseInt)
+  .option('-a, --tokens-after <n>', 'Tokens after optimization (per query)', parseInt)
+  .option('-s, --savings <n>', 'Savings percentage (e.g., 45 for 45%)', parseFloat)
+  .option('-q, --queries-per-day <n>', 'Number of queries per day', parseInt)
+  .option('-m, --model <n>', 'LLM model (gpt-4o, claude-sonnet-4, etc.)', 'gpt-4o')
+  .option('--list-models', 'List available LLM models')
+  .option('--json', 'Output as JSON')
+  .option('--summary', 'Show marketing summary')
+  .action((options: any) => {
+    try {
+      if (options.listModels) {
+        console.log(listLLMModels());
+        return;
+      }
+
+      if (!options.queriesPerDay) {
+        console.error('❌ Error: --queries-per-day is required');
+        console.log('\nExample: tonl roi --queries-per-day 1000 --savings 45 --model gpt-4o');
+        process.exit(1);
+      }
+
+      const hasTokens = options.tokensBefore && options.tokensAfter;
+      const hasSavings = options.savings;
+
+      if (!hasTokens && !hasSavings) {
+        console.error('❌ Error: Provide either (--tokens-before AND --tokens-after) OR --savings');
+        console.log('\nExamples:');
+        console.log('  tonl roi --tokens-before 1000 --tokens-after 550 --queries-per-day 1000');
+        console.log('  tonl roi --savings 45 --queries-per-day 1000 --model gpt-4o');
+        process.exit(1);
+      }
+
+      let tokensBefore = options.tokensBefore;
+      let tokensAfter = options.tokensAfter;
+      
+      if (hasSavings && !hasTokens) {
+        tokensBefore = 1000;
+        tokensAfter = Math.round(tokensBefore * (1 - options.savings / 100));
+      }
+
+      const roi = calculateROI({
+        tokensBefore,
+        tokensAfter,
+        queriesPerDay: options.queriesPerDay,
+        llmModel: options.model,
+        savingsPercentage: options.savings
+      });
+
+      if (options.json) {
+        console.log(JSON.stringify(roi, null, 2));
+      } else if (options.summary) {
+        console.log(generateMarketingSummary(roi));
+      } else {
+        console.log(formatROI(roi));
+      }
+    } catch (error) {
+      console.error('❌ Error:', error instanceof Error ? error.message : String(error));
+      process.exit(1);
+    }
+  });
+
 
 program.parse();

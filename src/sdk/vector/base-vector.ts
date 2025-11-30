@@ -1,10 +1,10 @@
-import type { VectorDBConfig } from './types.js';
+import type { BaseVectorConfig } from './types.js';
 
 export abstract class BaseVectorAdapter {
   protected connected = false;
-  protected config: VectorDBConfig;
+  protected config: BaseVectorConfig;
 
-  constructor(config: VectorDBConfig) {
+  constructor(config: BaseVectorConfig) {
     this.config = config;
   }
 
@@ -15,7 +15,7 @@ export abstract class BaseVectorAdapter {
     return this.connected;
   }
 
-  getConfig(): VectorDBConfig {
+  getConfig(): BaseVectorConfig {
     return { ...this.config };
   }
 }

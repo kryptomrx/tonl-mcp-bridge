@@ -1,12 +1,14 @@
 export interface BaseVectorConfig {
   metadata?: Record<string, any>;
+  url?: string;
 }
 
 export interface QdrantConfig extends BaseVectorConfig {
-  url: string;
+  url?: string;
   apiKey?: string;
   https?: boolean;
   port?: number;
+  host?: string;
 }
 
 export interface MilvusConfig extends BaseVectorConfig {
@@ -53,6 +55,17 @@ export interface VectorSearchOptions {
   filter?: Record<string, any>;
   select?: string[];
   includeVector?: boolean;
+  // Qdrant specific
+  scoreThreshold?: number;
+  withPayload?: boolean;
+  withVector?: boolean;
+  // Pinecone specific
+  includeMetadata?: boolean;
+  includeValues?: boolean;
+  namespace?: string;
+  // Milvus specific
+  consistencyLevel?: string;
+  outputFields?: string[];
 }
 
 export interface MongoDBSearchOptions extends VectorSearchOptions {
@@ -69,6 +82,7 @@ export interface MongoDBInsertOptions {
 }
 
 export interface MongoDBHybridSearchOptions extends MongoDBSearchOptions {
+  vector?: number[];
   textQuery?: string;
   vectorWeight?: number;
   textWeight?: number;

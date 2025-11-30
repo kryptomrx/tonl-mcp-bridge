@@ -31,12 +31,13 @@ export class QdrantAdapter extends BaseVectorAdapter {
   private client: QdrantClient | null = null;
   protected declare config: QdrantConfig;
 
-  constructor(config: QdrantConfig = {}) {
+  constructor(config: QdrantConfig) {
+    const url = config.url || `http://${config.host || 'localhost'}:${config.port || 6333}`;
     super({
-      url: config.url || `http://${config.host || 'localhost'}:${config.port || 6333}`,
-      apiKey: config.apiKey,
+      ...config,
+      url,
     });
-    this.config = this.getConfig() as QdrantConfig;
+    this.config = { ...config, url };
   }
 
   async connect(): Promise<void> {

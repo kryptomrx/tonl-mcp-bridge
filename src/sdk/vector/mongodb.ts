@@ -2,7 +2,6 @@ import { BaseVectorAdapter } from './base.js';
 import { createMongoDBClient } from '../loaders/mongodb-loader.js';
 import { jsonToTonl } from '../../core/json-to-tonl.js';
 import { countTokens } from '../../utils/token-counter.js';
-import type { MongoClient, Db, Collection } from 'mongodb';
 import type {
   MongoDBConfig,
   MongoDBSearchOptions,
@@ -137,8 +136,8 @@ function validateLimit(limit: number | undefined, maxLimit: number = 1000): numb
 }
 
 export class MongoDBAdapter extends BaseVectorAdapter {
-  private client: MongoClient | null = null;
-  private db: Db | null = null;
+  private client: any = null;
+  private db: any = null;
   private config: MongoDBConfig;
   private queryStats = new Map<string, { count: number; totalTime: number; avgTime: number }>();
   private readonly defaultBatchSize: number;
@@ -193,7 +192,7 @@ export class MongoDBAdapter extends BaseVectorAdapter {
     }
   }
 
-  private getCollection(name: string): Collection {
+  private getCollection(name: string): any {
     this.ensureConnected();
     validateCollectionName(name);
     return this.db!.collection(name);
