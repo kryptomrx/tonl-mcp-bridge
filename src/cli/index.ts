@@ -24,8 +24,11 @@ import {
   calculateROI,
   formatROI,
   generateMarketingSummary,
-  listLLMModels
+  listLLMModels,
+  exportToCSV,
+  formatBatchROI
 } from './commands/roi-calculator.js';
+import { glob } from 'glob';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -228,6 +231,90 @@ program
     });
   });
 
+// Analyze command
+program
+  .command('analyze')
+  .argument('<input>', 'Input JSON file(s) to analyze (supports glob patterns)')
+  .option('-m, --model <model>', 'LLM model (gpt-4o, claude-3.5-sonnet, gemini-2.0-flash)', 'gpt-4o')
+  .option('--list-models', 'List available LLM models')
+  .option('--summary', 'Show business impact summary')
+  .option('--export <file>', 'Export results to CSV file')
+  .option('-c, --currency <code>', 'Display currency (USD, EUR, GBP, JPY, CHF, CAD, AUD)', 'USD')
+  .option('-r, --rate <number>', 'Custom exchange rate (overrides default)', parseFloat)
+  .description('Analyze token usage and cost savings for file(s)')
+  .action(async (input: string, options: any) => {
+    try {
+      if (options.listModels) {
+        console.log(listLLMModels());
+        return;
+      }
+
+      // Check if input is a glob pattern
+      const files = await glob(input, {
+        ignore: ['node_modules/**', 'dist/**', '*.tonl'],
+      });
+
+      if (files.length === 0) {
+        console.error(`❌ Error: No files found matching: ${input}`);
+        process.exit(1);
+      }
+
+      const calculations: any[] = [];
+
+      // Process each file
+      for (const filepath of files) {
+        try {
+          // Read input file
+          const inputContent = readFileSync(filepath, 'utf-8');
+          const jsonData = JSON.parse(inputContent);
+
+          // Convert to TONL
+          const tonlContent = jsonToTonl(jsonData, 'data');
+
+          // Calculate tokens
+          const savings = calculateRealSavings(inputContent, tonlContent, options.model);
+
+          // Calculate ROI
+          const roi = calculateROI(savings.originalTokens, savings.compressedTokens, options.model);
+          roi.filename = filepath;
+          
+          calculations.push(roi);
+        } catch (error) {
+          console.error(`⚠️  Skipping ${filepath}:`, error instanceof Error ? error.message : String(error));
+        }
+      }
+
+      if (calculations.length === 0) {
+        console.error('❌ Error: No valid JSON files to analyze');
+        process.exit(1);
+      }
+
+      // Display results
+      if (calculations.length === 1) {
+        // Single file - show detailed output
+        console.log(formatROI(calculations[0], calculations[0].filename, options.currency, options.rate));
+        
+        if (options.summary) {
+          console.log(generateMarketingSummary(calculations[0], options.currency, options.rate));
+        }
+      } else {
+        // Multiple files - show batch summary
+        console.log(formatBatchROI(calculations, options.currency, options.rate));
+      }
+
+      // Export to CSV if requested
+      if (options.export) {
+        const csv = exportToCSV(calculations);
+        writeFileSync(options.export, csv, 'utf-8');
+        console.log(`\n📊 Exported to: ${options.export}`);
+      }
+
+    } catch (error) {
+      console.error('❌ Error:', error instanceof Error ? error.message : String(error));
+      process.exit(1);
+    }
+  });
+
 // ROI Calculator command
 program
   .command('roi')
@@ -272,13 +359,7 @@ program
         tokensAfter = Math.round(tokensBefore * (1 - options.savings / 100));
       }
 
-      const roi = calculateROI({
-        tokensBefore,
-        tokensAfter,
-        queriesPerDay: options.queriesPerDay,
-        llmModel: options.model,
-        savingsPercentage: options.savings
-      });
+      const roi = calculateROI(tokensBefore, tokensAfter, options.model);
 
       if (options.json) {
         console.log(JSON.stringify(roi, null, 2));

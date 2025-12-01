@@ -32,6 +32,16 @@ export interface WeaviateConfig extends BaseVectorConfig {
   host?: string;
 }
 
+export interface RedisConfig extends BaseVectorConfig {
+  url?: string;
+  host?: string;
+  port?: number;
+  password?: string;
+  database?: number;
+  username?: string;
+  indexPrefix?: string;
+}
+
 export interface MongoDBConfig extends BaseVectorConfig {
   uri: string;
   database: string;
@@ -127,4 +137,39 @@ export interface VectorValidationOptions {
 export interface CollectionNameValidationOptions {
   maxLength?: number;
   allowSpecialChars?: boolean;
+}
+
+export interface RedisSearchOptions extends VectorSearchOptions {
+  textQuery?: string;
+  textWeight?: number;
+  vectorWeight?: number;
+  numericFilters?: Record<string, { min?: number; max?: number }>;
+  tagFilters?: Record<string, string | string[]>;
+  geoFilter?: {
+    field: string;
+    latitude: number;
+    longitude: number;
+    radius: number;
+    unit?: 'km' | 'm' | 'mi' | 'ft';
+  };
+  useRRF?: boolean;
+  useCompression?: boolean;
+  returnFields?: string[];
+  useSemanticCache?: boolean;
+  cacheTTL?: number;
+  similarityThreshold?: number;
+}
+
+export interface RedisIndexOptions {
+  dimensions: number;
+  algorithm?: 'FLAT' | 'HNSW';
+  distanceMetric?: 'COSINE' | 'L2' | 'IP';
+  m?: number;
+  efConstruction?: number;
+  efRuntime?: number;
+  quantization?: 'NONE' | 'BINARY' | 'SCALAR';
+  textFields?: string[];
+  numericFields?: string[];
+  tagFields?: string[];
+  geoFields?: string[];
 }

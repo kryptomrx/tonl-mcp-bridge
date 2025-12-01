@@ -51,3 +51,9 @@ examples/*.local.ts
 *.local.ts
 *.local.js
 *.local.example.ts
+# ROI Calculator Test Files
+*.csv
+data.json
+test-data.json
+test-batch/
+*.BROKEN
