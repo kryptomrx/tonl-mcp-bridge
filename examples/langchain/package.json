@@ -1,0 +1,28 @@
+{
+  "name": "langchain-tonl-examples",
+  "version": "1.0.0",
+  "description": "LangChain integration examples with TONL - reduce RAG token costs by 30-60%",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "basic-rag": "tsx 01-basic-rag.ts",
+    "retriever": "tsx 02-tonl-retriever.ts",
+    "conversational": "tsx 03-conversational-rag.ts"
+  },
+  "dependencies": {
+    "langchain": "^0.3.0",
+    "@langchain/core": "^0.3.0",
+    "@langchain/openai": "^0.3.0",
+    "@langchain/anthropic": "^0.3.0",
+    "@langchain/google-genai": "^0.1.0",
+    "@langchain/ollama": "^0.1.0",
+    "@langchain/community": "^0.3.0",
+    "tonl-mcp-bridge": "file:../..",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3",
+    "@types/node": "^20.11.0"
+  }
+}
