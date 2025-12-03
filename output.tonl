@@ -1,0 +1,4 @@
+data[]{level:str,message:str,timestamp:datetime}:
+  info, "Server started", 2025-12-03T19:00:00Z
+  warn, "High memory usage", 2025-12-03T19:01:00Z
+  error, "Connection timeout", 2025-12-03T19:02:00Z

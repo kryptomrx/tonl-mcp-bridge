@@ -1,6 +1,7 @@
 import express from 'express';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
+import { pipeline } from 'stream/promises';
 import {
   ConvertToTonlSchema,
   ParseTonlSchema,
@@ -20,6 +21,7 @@ import {
   recordCompressionRatio,
   recordDataSize
 } from './metrics.js';
+import { NdjsonParse, TonlTransform } from '../core/streams/index.js';
 
 // --- SECURITY CONFIGURATION ---
 const AUTH_TOKEN = process.env.TONL_AUTH_TOKEN;
@@ -60,6 +62,94 @@ app.get('/metrics', async (req, res) => {
   } catch (error) {
     console.error('Error generating metrics:', error);
     res.status(500).end('Error generating metrics');
+  }
+});
+
+// --- STREAMING ENDPOINT ---
+/**
+ * POST /stream/convert - Convert NDJSON stream to TONL stream
+ * 
+ * High-performance streaming conversion for log files.
+ * Supports gigabyte-sized files with constant memory usage.
+ * 
+ * Headers:
+ *   Content-Type: application/x-ndjson
+ *   Authorization: Bearer <token> (optional)
+ * 
+ * Query params:
+ *   collection: Collection name (default: 'data')
+ *   skipInvalid: Skip invalid JSON lines (default: true)
+ * 
+ * Example:
+ *   curl -X POST http://localhost:3000/stream/convert?collection=logs \
+ *        -H "Content-Type: application/x-ndjson" \
+ *        --data-binary @logs.ndjson
+ */
+app.post('/stream/convert', async (req, res) => {
+  const collectionName = (req.query.collection as string) || 'data';
+  const skipInvalid = req.query.skipInvalid !== 'false';
+  
+  // Validate Content-Type
+  const contentType = req.headers['content-type'];
+  if (contentType && !contentType.includes('ndjson') && !contentType.includes('json')) {
+    res.status(400).json({ 
+      error: 'Invalid Content-Type',
+      expected: 'application/x-ndjson or application/json'
+    });
+    return;
+  }
+
+  // Set response headers for streaming
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+  res.setHeader('Transfer-Encoding', 'chunked');
+  res.setHeader('X-Collection-Name', collectionName);
+
+  const startTime = Date.now();
+  let linesProcessed = 0;
+  let bytesIn = 0;
+  let bytesOut = 0;
+
+  try {
+    const parser = new NdjsonParse({ skipInvalid });
+    const transform = new TonlTransform({ collectionName, skipInvalid });
+
+    // Track metrics
+    req.on('data', (chunk) => {
+      bytesIn += chunk.length;
+    });
+
+    transform.on('data', (chunk) => {
+      bytesOut += chunk.length;
+    });
+
+    // Pipeline: Request → NDJSON Parser → TONL Transform → Response
+    await pipeline(
+      req,
+      parser,
+      transform,
+      res
+    );
+
+    linesProcessed = transform.getRowCount();
+    const duration = (Date.now() - startTime) / 1000;
+    
+    // Log stats
+    console.log(`Stream completed: ${linesProcessed} lines, ${bytesIn}→${bytesOut} bytes, ${duration.toFixed(2)}s`);
+    
+    // Record metrics
+    recordDataSize(bytesIn, 'json_input');
+    recordDataSize(bytesOut, 'tonl_output');
+    
+  } catch (error) {
+    console.error('Stream error:', error);
+    
+    // Only send error if headers haven't been sent yet
+    if (!res.headersSent) {
+      res.status(500).json({ 
+        error: 'Stream processing failed',
+        message: error instanceof Error ? error.message : String(error)
+      });
+    }
   }
 });
 
@@ -272,6 +362,7 @@ export function startHttpServer(port: number | string = 3000) {
   const server = app.listen(port, () => {
     console.log(`🚀 TONL MCP Server listening on port ${port}`);
     console.log(`   - SSE Stream: http://localhost:${port}/mcp`);
+    console.log(`   - Log Stream: http://localhost:${port}/stream/convert`);
     console.log(`   - Metrics: http://localhost:${port}/metrics`);
     
     if (process.env.TONL_AUTH_TOKEN) {

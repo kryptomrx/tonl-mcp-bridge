@@ -6,9 +6,10 @@
  */
 
 import { Command } from 'commander';
-import { readFileSync, writeFileSync } from 'fs';
+import { readFileSync, writeFileSync, createReadStream, createWriteStream } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { pipeline } from 'stream/promises';
 import { jsonToTonl } from '../core/json-to-tonl.js';
 import { tonlToJson } from '../core/tonl-to-json.js';
 import { estimateTokens, calculateSavings } from '../utils/token-counter.js';
@@ -31,6 +32,7 @@ import {
 import { glob } from 'glob';
 import { formatAsJSON, formatAsMarkdown } from './commands/formatters.js';
 import { formatFileNotFoundError, formatJSONError } from './utils/error-helpers.js';
+import { NdjsonParse, TonlTransform } from '../core/streams/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -405,6 +407,59 @@ program
       }
     } catch (error) {
       console.error('❌ Error:', error instanceof Error ? error.message : String(error));
+      process.exit(1);
+    }
+  });
+
+
+// Stream command
+program
+  .command('stream')
+  .description('Stream NDJSON from stdin and convert to TONL')
+  .option('-i, --input <file>', 'Input file (default: stdin)')
+  .option('-o, --output <file>', 'Output file (default: stdout)')
+  .option('-n, --name <name>', 'Collection name', 'data')
+  .option('--skip-invalid', 'Skip invalid JSON lines', true)
+  .option('--stats', 'Show statistics at end')
+  .action(async (options: any) => {
+    try {
+      const collectionName = options.name;
+      const skipInvalid = options.skipInvalid;
+      
+      // Input: stdin or file
+      const input = options.input 
+        ? createReadStream(options.input) 
+        : process.stdin;
+      
+      // Output: stdout or file
+      const output = options.output 
+        ? createWriteStream(options.output) 
+        : process.stdout;
+      
+      const parser = new NdjsonParse({ skipInvalid });
+      const transform = new TonlTransform({ collectionName, skipInvalid });
+      
+      const startTime = Date.now();
+      
+      // Pipeline: Input → Parse → Transform → Output
+      await pipeline(
+        input,
+        parser,
+        transform,
+        output
+      );
+      
+      // Show stats if requested (only to stderr to not pollute output)
+      if (options.stats) {
+        const duration = (Date.now() - startTime) / 1000;
+        const lines = transform.getRowCount();
+        const linesPerSec = Math.round(lines / duration);
+        
+        console.error(`\nProcessed: ${lines} lines in ${duration.toFixed(2)}s (${linesPerSec} lines/sec)`);
+      }
+      
+    } catch (error) {
+      console.error('Error:', error instanceof Error ? error.message : String(error));
       process.exit(1);
     }
   });
