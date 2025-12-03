@@ -1,0 +1,52 @@
+{
+  "dashboard": {
+    "title": "TONL MCP Bridge - Token Savings & Performance",
+    "tags": ["tonl", "mcp", "token-optimization", "roi"],
+    "timezone": "browser",
+    "schemaVersion": 36,
+    "version": 1,
+    "refresh": "30s",
+    "panels": [
+      {
+        "type": "stat",
+        "title": "Cost Savings (USD)",
+        "gridPos": {"h": 6, "w": 6, "x": 0, "y": 0},
+        "targets": [{
+          "expr": "sum(tonl_estimated_cost_savings_usd)",
+          "refId": "A"
+        }],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "green"},
+                {"value": 100, "color": "dark-green"}
+              ]
+            },
+            "unit": "currencyUSD",
+            "decimals": 2
+          }
+        }
+      },
+      {
+        "type": "stat",
+        "title": "Tokens Saved",
+        "gridPos": {"h": 6, "w": 6, "x": 6, "y": 0},
+        "targets": [{
+          "expr": "sum(tonl_tokens_saved_total)",
+          "refId": "A"
+        }],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "unit": "short",
+            "decimals": 0
+          }
+        }
+      }
+    ]
+  },
+  "overwrite": true
+}

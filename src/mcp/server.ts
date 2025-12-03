@@ -11,6 +11,15 @@ import { convertToTonlHandler } from './tools/convert.js';
 import { parseTonlHandler } from './tools/parse.js';
 import { calculateSavingsHandler } from './tools/calculate-savings.js';
 import { fileURLToPath } from 'url';
+import {
+  getMetricsRegistry,
+  incrementConnections,
+  decrementConnections,
+  recordConversion,
+  recordTokenSavings,
+  recordCompressionRatio,
+  recordDataSize
+} from './metrics.js';
 
 // --- SECURITY CONFIGURATION ---
 const AUTH_TOKEN = process.env.TONL_AUTH_TOKEN;
@@ -39,13 +48,24 @@ const authMiddleware = (req: express.Request, res: express.Response, next: expre
 
 const app = express();
 
-// Increase limit for large batch payloads
 app.use(express.json({ limit: '50mb' }));
 
-// Apply auth to all MCP routes
+// --- ROUTES (before middleware) ---
+
+app.get('/metrics', async (req, res) => {
+  try {
+    res.set('Content-Type', getMetricsRegistry().contentType);
+    const metrics = await getMetricsRegistry().metrics();
+    res.end(metrics);
+  } catch (error) {
+    console.error('Error generating metrics:', error);
+    res.status(500).end('Error generating metrics');
+  }
+});
+
 app.use('/mcp', authMiddleware);
 
-// --- SERVER SETUP ---
+// --- MCP SERVER SETUP ---
 
 // Store active transports to handle POST requests
 const transports: Record<string, SSEServerTransport> = {};
@@ -56,7 +76,7 @@ const transports: Record<string, SSEServerTransport> = {};
 function createMcpServer(): McpServer {
   const server = new McpServer({
     name: 'tonl-mcp-bridge',
-    version: '0.9.0'
+    version: '1.0.0'
   });
 
   // Tool: convert_to_tonl
@@ -65,22 +85,52 @@ function createMcpServer(): McpServer {
     'Convert JSON data to TONL format. Reduces token usage by 30-60%.',
     ConvertToTonlSchema.shape, 
     async (args) => {
-      const validated = ConvertToTonlSchema.parse(args);
-      const result = await convertToTonlHandler(validated);
-      
-      if (!result.success) {
-        return {
-          isError: true,
-          content: [{ type: 'text', text: result.error || 'Conversion failed' }]
-        };
-      }
+      return await recordConversion('json_to_tonl', async () => {
+        const validated = ConvertToTonlSchema.parse(args);
+        
+        // Record input data size
+        const inputSize = JSON.stringify(validated.data).length;
+        recordDataSize(inputSize, 'json_input');
+        
+        const result = await convertToTonlHandler(validated);
+        
+        if (!result.success) {
+          return {
+            isError: true,
+            content: [{ type: 'text', text: result.error || 'Conversion failed' }]
+          };
+        }
 
-      return {
-        content: [{
-          type: 'text',
-          text: JSON.stringify({ tonl: result.data?.tonl, stats: result.stats }, null, 2)
-        }]
-      };
+        // Record metrics
+        if (result.stats && result.data?.tonl) {
+          const model = 'gpt-4o'; // Default model for MCP conversions
+          
+          // Record token savings (with null check)
+          if (result.stats.savedTokens) {
+            recordTokenSavings(result.stats.savedTokens, model);
+          }
+          
+          // Record compression ratio (with null checks)
+          if (result.stats.originalTokens && result.stats.compressedTokens) {
+            recordCompressionRatio(
+              result.stats.originalTokens,
+              result.stats.compressedTokens,
+              model
+            );
+          }
+          
+          // Record output size
+          const outputSize = result.data.tonl.length;
+          recordDataSize(outputSize, 'tonl_output');
+        }
+
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({ tonl: result.data?.tonl, stats: result.stats }, null, 2)
+          }]
+        };
+      });
     }
   );
 
@@ -90,22 +140,24 @@ function createMcpServer(): McpServer {
     'Parse TONL format back to JSON.',
     ParseTonlSchema.shape,
     async (args) => {
-      const validated = ParseTonlSchema.parse(args);
-      const result = await parseTonlHandler(validated);
+      return await recordConversion('tonl_to_json', async () => {
+        const validated = ParseTonlSchema.parse(args);
+        const result = await parseTonlHandler(validated);
 
-      if (!result.success) {
+        if (!result.success) {
+          return {
+            isError: true,
+            content: [{ type: 'text', text: result.error || 'Parsing failed' }]
+          };
+        }
+
         return {
-          isError: true,
-          content: [{ type: 'text', text: result.error || 'Parsing failed' }]
+          content: [{
+            type: 'text',
+            text: JSON.stringify(result.data?.json, null, 2)
+          }]
         };
-      }
-
-      return {
-        content: [{
-          type: 'text',
-          text: JSON.stringify(result.data?.json, null, 2)
-        }]
-      };
+      });
     }
   );
 
@@ -115,38 +167,58 @@ function createMcpServer(): McpServer {
     'Calculate token savings between JSON and TONL formats.',
     CalculateSavingsSchema.shape,
     async (args) => {
-      const validated = CalculateSavingsSchema.parse(args);
-      const result = await calculateSavingsHandler(validated);
+      return await recordConversion('calculate_savings', async () => {
+        const validated = CalculateSavingsSchema.parse(args);
+        const result = await calculateSavingsHandler(validated);
 
-      if (!result.success) {
+        if (!result.success) {
+          return {
+            isError: true,
+            content: [{ type: 'text', text: result.error || 'Calculation failed' }]
+          };
+        }
+
+        // Record savings if available
+        if (result.data) {
+          const model = validated.model || 'gpt-5';
+          
+          // Record with null checks
+          if (result.data.savedTokens) {
+            recordTokenSavings(result.data.savedTokens, model);
+          }
+          
+          if (result.data.originalTokens && result.data.compressedTokens) {
+            recordCompressionRatio(
+              result.data.originalTokens,
+              result.data.compressedTokens,
+              model
+            );
+          }
+        }
+
         return {
-          isError: true,
-          content: [{ type: 'text', text: result.error || 'Calculation failed' }]
+          content: [{
+            type: 'text',
+            text: JSON.stringify(result.data, null, 2)
+          }]
         };
-      }
-
-      return {
-        content: [{
-          type: 'text',
-          text: JSON.stringify(result.data, null, 2)
-        }]
-      };
+      });
     }
   );
 
   return server;
 }
 
-// --- ROUTES ---
+// --- MCP ROUTES ---
 
-/**
- * GET /mcp -> Start SSE connection
- */
 app.get('/mcp', async (req, res) => {
   // Use provided sessionId or generate new one
   const sessionId = (req.query.sessionId as string) || crypto.randomUUID();
   
   console.log(`-> New SSE connection: ${sessionId}`);
+  
+  // Track connection
+  incrementConnections();
 
   const transport = new SSEServerTransport('/mcp', res);
   const server = createMcpServer();
@@ -155,6 +227,7 @@ app.get('/mcp', async (req, res) => {
 
   req.on('close', () => {
     console.log(`<- Connection closed: ${sessionId}`);
+    decrementConnections();
     delete transports[sessionId];
   });
 
@@ -163,6 +236,7 @@ app.get('/mcp', async (req, res) => {
     await transport.start();
   } catch (err) {
     console.error('Transport error:', err);
+    decrementConnections();
     if (!res.headersSent) res.status(500).end();
   }
 });
@@ -198,9 +272,10 @@ export function startHttpServer(port: number | string = 3000) {
   const server = app.listen(port, () => {
     console.log(`🚀 TONL MCP Server listening on port ${port}`);
     console.log(`   - SSE Stream: http://localhost:${port}/mcp`);
+    console.log(`   - Metrics: http://localhost:${port}/metrics`);
     
     if (process.env.TONL_AUTH_TOKEN) {
-      console.log(`   🔒 Security: Enabled (Bearer Token required)`);
+      console.log(`   🔒 Security: Enabled (Bearer Token required for /mcp)`);
     } else {
       console.warn(`   ⚠️  Security: Disabled (No TONL_AUTH_TOKEN set)`);
     }

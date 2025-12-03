@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  # TONL MCP Bridge Server
+  tonl-mcp-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tonl-mcp-server
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+      - TONL_AUTH_TOKEN=${TONL_AUTH_TOKEN:-your-secret-token-here}
+    networks:
+      - tonl-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Prometheus - Metrics Collection
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: tonl-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    networks:
+      - tonl-network
+    restart: unless-stopped
+    depends_on:
+      - tonl-mcp-server
+
+  # Grafana - Visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: tonl-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+      - GF_SERVER_ROOT_URL=http://localhost:3001
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana-datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml:ro
+      - ./grafana-dashboard.json:/etc/grafana/provisioning/dashboards/tonl.json:ro
+      - ./grafana-dashboard-provider.yml:/etc/grafana/provisioning/dashboards/provider.yml:ro
+    networks:
+      - tonl-network
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+
+networks:
+  tonl-network:
+    driver: bridge
+
+volumes:
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local

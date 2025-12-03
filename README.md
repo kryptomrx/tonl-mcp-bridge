@@ -80,7 +80,14 @@ data[2]{id:i32,name:str,age:i32,email:str,active:bool}:
 - Auto-detect format based on extension (.json, .yaml, .yml, .tonl)
 - Optional token savings statistics
 
- **MCP Server** (New in v0.9.0)
+ **Prometheus Metrics** (New in v1.0.0)
+- Business metrics (token savings, cost savings, ROI)
+- Operational metrics (latency, connections, errors)
+- Grafana dashboard included
+- Universal compatibility (Prometheus, OTel, Datadog, New Relic)
+- [📖 Metrics Guide](./METRICS.md)
+
+ **MCP Server**
 - HTTP/SSE transport for remote connections
 - Bearer token authentication
 - Session management
@@ -396,11 +403,11 @@ npm run cli convert file.json
   - [x] Schema drift detection
   - [x] Docker support
   
-- [ ] **Phase 3: Production Infrastructure**
+- [x] **Phase 3: Production Infrastructure** (v1.0.0)
+  - [x] Prometheus metrics
+  - [x] Grafana dashboards
   - [ ] Kubernetes manifests
   - [ ] Health check endpoints
-  - [ ] Prometheus metrics
-  - [ ] Grafana dashboards
   
 - [ ] **Phase 4: Ecosystem**
   - [ ] VS Code extension

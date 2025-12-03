@@ -29,6 +29,8 @@ import {
   formatBatchROI
 } from './commands/roi-calculator.js';
 import { glob } from 'glob';
+import { formatAsJSON, formatAsMarkdown } from './commands/formatters.js';
+import { formatFileNotFoundError, formatJSONError } from './utils/error-helpers.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -241,6 +243,8 @@ program
   .option('--export <file>', 'Export results to CSV file')
   .option('-c, --currency <code>', 'Display currency (USD, EUR, GBP, JPY, CHF, CAD, AUD)', 'USD')
   .option('-r, --rate <number>', 'Custom exchange rate (overrides default)', parseFloat)
+  .option('--visual', 'Show visual dashboard UI')
+  .option('-f, --format <type>', 'Output format (text|json|markdown|csv)', 'text')
   .description('Analyze token usage and cost savings for file(s)')
   .action(async (input: string, options: any) => {
     try {
@@ -255,7 +259,7 @@ program
       });
 
       if (files.length === 0) {
-        console.error(`❌ Error: No files found matching: ${input}`);
+        console.error(formatFileNotFoundError(input));
         process.exit(1);
       }
 
@@ -266,7 +270,13 @@ program
         try {
           // Read input file
           const inputContent = readFileSync(filepath, 'utf-8');
-          const jsonData = JSON.parse(inputContent);
+          let jsonData;
+          
+          try {
+            jsonData = JSON.parse(inputContent);
+          } catch (parseError) {
+            throw new Error(formatJSONError(filepath, parseError as Error));
+          }
 
           // Convert to TONL
           const tonlContent = jsonToTonl(jsonData, 'data');
@@ -280,7 +290,8 @@ program
           
           calculations.push(roi);
         } catch (error) {
-          console.error(`⚠️  Skipping ${filepath}:`, error instanceof Error ? error.message : String(error));
+          console.error(`⚠️  Skipping ${filepath}:`);
+          console.error(error instanceof Error ? error.message : String(error));
         }
       }
 
@@ -289,22 +300,46 @@ program
         process.exit(1);
       }
 
-      // Display results
-      if (calculations.length === 1) {
-        // Single file - show detailed output
-        console.log(formatROI(calculations[0], calculations[0].filename, options.currency, options.rate));
-        
-        if (options.summary) {
-          console.log(generateMarketingSummary(calculations[0], options.currency, options.rate));
-        }
+      // Display results based on format
+      if (options.format === 'json') {
+        // JSON output
+        console.log(formatAsJSON(calculations));
+      } else if (options.format === 'markdown') {
+        // Markdown output
+        console.log(formatAsMarkdown(calculations, options.currency));
+      } else if (options.format === 'csv') {
+        // CSV output (reuse existing export function)
+        console.log(exportToCSV(calculations, options.currency, options.rate));
       } else {
-        // Multiple files - show batch summary
-        console.log(formatBatchROI(calculations, options.currency, options.rate));
+        // Default text output (existing behavior)
+        if (options.visual && calculations.length === 1) {
+          // Visual Dashboard for single file
+          const React = await import('react');
+          const { render } = await import('ink');
+          const { AnalysisDashboard } = await import('./ui/AnalysisDashboard.js');
+          
+          render(
+            React.createElement(AnalysisDashboard, {
+              data: calculations[0],
+              currency: options.currency
+            })
+          );
+        } else if (calculations.length === 1) {
+          // Single file - show detailed output
+          console.log(formatROI(calculations[0], calculations[0].filename, options.currency, options.rate));
+          
+          if (options.summary) {
+            console.log(generateMarketingSummary(calculations[0], options.currency, options.rate));
+          }
+        } else {
+          // Multiple files - show batch summary
+          console.log(formatBatchROI(calculations, options.currency, options.rate));
+        }
       }
 
-      // Export to CSV if requested
+      // Export to CSV if requested (separate from format)
       if (options.export) {
-        const csv = exportToCSV(calculations);
+        const csv = exportToCSV(calculations, options.currency, options.rate);
         writeFileSync(options.export, csv, 'utf-8');
         console.log(`\n📊 Exported to: ${options.export}`);
       }
