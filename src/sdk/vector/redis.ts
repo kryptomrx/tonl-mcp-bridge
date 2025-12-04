@@ -70,6 +70,52 @@ function validateLimit(limit: number | undefined, maxLimit: number = 1000): numb
   return limit;
 }
 
+/**
+ * Redis Stack Vector Search Adapter
+ * 
+ * Redis Stack with RediSearch provides ultra-fast vector similarity search
+ * with sub-millisecond latency. Perfect for real-time applications.
+ * 
+ * **Key Features:**
+ * - Sub-millisecond query latency
+ * - Real-time indexing
+ * - Hybrid search (vector + filters)
+ * - Semantic caching built-in
+ * - TONL conversion for 40-60% token savings
+ * - JSON and hash data structures
+ * 
+ * **Use Cases:**
+ * - Real-time recommendation systems
+ * - Low-latency semantic search
+ * - Session-based personalization
+ * - LLM response caching
+ * - Live content filtering
+ * 
+ * @example
+ * ```typescript
+ * import { RedisAdapter } from 'tonl-mcp-bridge';
+ * 
+ * const redis = new RedisAdapter({
+ *   host: 'localhost',
+ *   port: 6379
+ * });
+ * 
+ * await redis.connect();
+ * 
+ * // Create vector index
+ * await redis.createIndex('products_idx', {
+ *   dimensions: 768,
+ *   algorithm: 'HNSW',
+ *   distanceMetric: 'COSINE'
+ * });
+ * 
+ * // Fast vector search
+ * const results = await redis.search('products', embedding, {
+ *   limit: 10,
+ *   returnFields: ['name', 'price']
+ * });
+ * ```
+ */
 export class RedisAdapter extends BaseVectorAdapter {
   private client: any = null;
   private hasJSON: boolean = false;
@@ -81,11 +127,50 @@ export class RedisAdapter extends BaseVectorAdapter {
     ttl: number 
   }>();
 
+  /**
+   * Create Redis Stack vector search adapter
+   * 
+   * @param config - Redis configuration
+   * 
+   * @example
+   * ```typescript
+   * // Local instance
+   * const adapter = new RedisAdapter({
+   *   host: 'localhost',
+   *   port: 6379
+   * });
+   * 
+   * // With authentication
+   * const secureAdapter = new RedisAdapter({
+   *   url: 'redis://redis.example.com:6379',
+   *   password: process.env.REDIS_PASSWORD
+   * });
+   * 
+   * // Redis Cloud
+   * const cloudAdapter = new RedisAdapter({
+   *   url: 'redis://default:pass@redis-12345.cloud.redislabs.com:12345',
+   *   indexPrefix: 'myapp:'
+   * });
+   * ```
+   */
   constructor(config: RedisConfig = {}) {
     super(config);
     this.indexPrefix = config.indexPrefix || 'tonl:vector';
   }
 
+  /**
+   * Connect to Redis Stack
+   * 
+   * Validates RediSearch and RedisJSON modules are available.
+   * 
+   * @throws {Error} If connection fails or required modules missing
+   * 
+   * @example
+   * ```typescript
+   * await redis.connect();
+   * console.log('Connected to Redis Stack');
+   * ```
+   */
   async connect(): Promise<void> {
     const result = await loadRedis({
       url: this.config.url,
@@ -102,6 +187,14 @@ export class RedisAdapter extends BaseVectorAdapter {
     this.connected = true;
   }
 
+  /**
+   * Disconnect from Redis
+   * 
+   * @example
+   * ```typescript
+   * await redis.disconnect();
+   * ```
+   */
   async disconnect(): Promise<void> {
     if (this.client) {
       try {
@@ -114,6 +207,41 @@ export class RedisAdapter extends BaseVectorAdapter {
     this.connected = false;
   }
 
+  /**
+   * Create vector search index
+   * 
+   * Creates FT.CREATE index with vector field and optional filters.
+   * Supports both FLAT and HNSW algorithms.
+   * 
+   * **Algorithm Comparison:**
+   * - FLAT: Exact search, slower but accurate
+   * - HNSW: Approximate search, 10-100x faster
+   * 
+   * @param indexName - Name for the index
+   * @param options - Index configuration
+   * 
+   * @example
+   * ```typescript
+   * // HNSW index (fast, approximate)
+   * await redis.createIndex('products_idx', {
+   *   dimensions: 768,
+   *   algorithm: 'HNSW',
+   *   distanceMetric: 'COSINE',
+   *   m: 16,
+   *   efConstruction: 200,
+   *   textFields: ['name', 'description'],
+   *   numericFields: ['price'],
+   *   tagFields: ['category']
+   * });
+   * 
+   * // FLAT index (exact, slower)
+   * await redis.createIndex('embeddings_idx', {
+   *   dimensions: 1536,
+   *   algorithm: 'FLAT',
+   *   distanceMetric: 'L2'
+   * });
+   * ```
+   */
   async createIndex(
     indexName: string,
     options: RedisIndexOptions

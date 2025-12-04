@@ -13,7 +13,7 @@ import type {
   IndexRecommendation
 } from './types.js';
 
-const COLLECTION_TEMPLATES: Record<CollectionTemplate, any> = {
+const COLLECTION_TEMPLATES: Partial<Record<CollectionTemplate, any>> = {
   'rag-documents': {
     description: 'RAG (Retrieval-Augmented Generation) document storage',
     fields: {
@@ -135,6 +135,56 @@ function validateLimit(limit: number | undefined, maxLimit: number = 1000): numb
   return limit;
 }
 
+/**
+ * MongoDB Atlas Vector Search Adapter
+ * 
+ * MongoDB Atlas provides native vector search capabilities on existing MongoDB collections.
+ * Perfect if you're already using MongoDB - no separate vector database needed.
+ * 
+ * **Key Features:**
+ * - Native vector search in MongoDB Atlas
+ * - Hybrid search (vector + text)
+ * - Pre-filtering for efficient search
+ * - Collection templates for quick setup
+ * - TONL conversion for 40-60% token savings
+ * - Built-in cost analysis and optimization
+ * 
+ * **Use Cases:**
+ * - Adding vector search to existing MongoDB applications
+ * - RAG systems with MongoDB backend
+ * - E-commerce semantic search
+ * - Content recommendation
+ * - Semantic caching
+ * 
+ * @example
+ * ```typescript
+ * import { MongoDBAdapter } from 'tonl-mcp-bridge';
+ * 
+ * const mongo = new MongoDBAdapter({
+ *   uri: process.env.MONGODB_URI!,
+ *   database: 'myapp'
+ * });
+ * 
+ * await mongo.connect();
+ * 
+ * // Create from template
+ * await mongo.createFromTemplate('products', 'product-catalog');
+ * 
+ * // Vector search with pre-filtering
+ * const results = await mongo.search('products', embedding, {
+ *   limit: 10,
+ *   preFilter: { inStock: true, price: { $lt: 100 } }
+ * });
+ * 
+ * // Hybrid search
+ * const hybrid = await mongo.hybridSearch('products', {
+ *   vector: embedding,
+ *   textQuery: 'laptop',
+ *   vectorWeight: 0.7,
+ *   textWeight: 0.3
+ * });
+ * ```
+ */
 export class MongoDBAdapter extends BaseVectorAdapter {
   private client: any = null;
   private db: any = null;
@@ -143,6 +193,24 @@ export class MongoDBAdapter extends BaseVectorAdapter {
   private readonly defaultBatchSize: number;
   private readonly maxRetries: number;
 
+  /**
+   * Create MongoDB Atlas vector search adapter
+   * 
+   * @param config - MongoDB configuration with URI and database
+   * 
+   * @example
+   * ```typescript
+   * const adapter = new MongoDBAdapter({
+   *   uri: 'mongodb+srv://user:pass@cluster.mongodb.net/',
+   *   database: 'production',
+   *   options: {
+   *     maxPoolSize: 50,
+   *     retryWrites: true
+   *   },
+   *   batchSize: 1000
+   * });
+   * ```
+   */
   constructor(config: MongoDBConfig) {
     super();
     this.config = config;
@@ -157,6 +225,19 @@ export class MongoDBAdapter extends BaseVectorAdapter {
     }
   }
 
+  /**
+   * Connect to MongoDB Atlas
+   * 
+   * Establishes connection with retry logic and validates database access.
+   * 
+   * @throws {Error} If connection fails or credentials are invalid
+   * 
+   * @example
+   * ```typescript
+   * await mongo.connect();
+   * console.log('Connected to MongoDB Atlas');
+   * ```
+   */
   async connect(): Promise<void> {
     if (this.connected) {
       return;
@@ -176,6 +257,16 @@ export class MongoDBAdapter extends BaseVectorAdapter {
     }
   }
 
+  /**
+   * Disconnect from MongoDB
+   * 
+   * Closes all connections and cleans up resources.
+   * 
+   * @example
+   * ```typescript
+   * await mongo.disconnect();
+   * ```
+   */
   async disconnect(): Promise<void> {
     if (!this.client) {
       return;
@@ -198,6 +289,45 @@ export class MongoDBAdapter extends BaseVectorAdapter {
     return this.db!.collection(name);
   }
 
+  /**
+   * Vector similarity search
+   * 
+   * Performs approximate k-NN search using MongoDB's $vectorSearch aggregation.
+   * Supports pre-filtering to narrow search space before vector comparison.
+   * 
+   * **Performance Tips:**
+   * - Use preFilter to reduce candidates (faster search)
+   * - Set numCandidates = limit * 10 for good accuracy
+   * - Create vector index before searching
+   * 
+   * @param collectionName - Name of collection
+   * @param vector - Query vector (embedding)
+   * @param options - Search options with pre-filtering
+   * @returns Array of matching documents with scores
+   * 
+   * @example
+   * ```typescript
+   * // Basic search
+   * const results = await mongo.search('products', embedding, {
+   *   limit: 10
+   * });
+   * 
+   * // With pre-filter (faster!)
+   * const filtered = await mongo.search('products', embedding, {
+   *   limit: 10,
+   *   preFilter: {
+   *     category: 'electronics',
+   *     inStock: true,
+   *     price: { $gte: 50, $lte: 500 }
+   *   },
+   *   numCandidates: 100
+   * });
+   * 
+   * results.forEach(doc => {
+   *   console.log(`${doc._id}: ${doc.score} - ${doc.name}`);
+   * });
+   * ```
+   */
   async search(
     collectionName: string,
     vector: number[],
@@ -255,6 +385,30 @@ export class MongoDBAdapter extends BaseVectorAdapter {
     }
   }
 
+  /**
+   * Hybrid search (vector + text)
+   * 
+   * Combines vector similarity search with MongoDB text search.
+   * Results are fused with weighted scoring.
+   * 
+   * @param collectionName - Name of collection
+   * @param options - Hybrid search options with weights
+   * @returns Fused results with hybrid scores
+   * 
+   * @example
+   * ```typescript
+   * const results = await mongo.hybridSearch('articles', {
+   *   vector: embedding,
+   *   textQuery: 'machine learning',
+   *   vectorWeight: 0.7,
+   *   textWeight: 0.3,
+   *   limit: 10
+   * });
+   * 
+   * // Results ranked by: (vectorScore * 0.7) + (textScore * 0.3)
+   * console.log(results[0].hybridScore);
+   * ```
+   */
   async hybridSearch(
     collectionName: string,
     options: MongoDBHybridSearchOptions
@@ -472,6 +626,32 @@ export class MongoDBAdapter extends BaseVectorAdapter {
     };
   }
 
+  /**
+   * Create collection from template
+   * 
+   * Quick setup using pre-defined schemas for common use cases.
+   * Automatically creates vector index with optimal settings.
+   * 
+   * **Available Templates:**
+   * - `rag-documents`: RAG document storage
+   * - `product-catalog`: E-commerce products
+   * - `user-profiles`: User preferences
+   * - `semantic-cache`: LLM response caching
+   * 
+   * @param collectionName - Name for new collection
+   * @param template - Template type
+   * 
+   * @example
+   * ```typescript
+   * // Create RAG document collection
+   * await mongo.createFromTemplate('docs', 'rag-documents');
+   * 
+   * // Create product catalog
+   * await mongo.createFromTemplate('products', 'product-catalog');
+   * 
+   * console.log('Collection ready with vector index');
+   * ```
+   */
   async createFromTemplate(
     collectionName: string,
     template: CollectionTemplate
@@ -516,7 +696,7 @@ export class MongoDBAdapter extends BaseVectorAdapter {
     }
   }
 
-  static getTemplates(): Record<CollectionTemplate, any> {
+  static getTemplates(): Partial<Record<CollectionTemplate, any>> {
     return COLLECTION_TEMPLATES;
   }
 

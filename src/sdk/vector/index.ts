@@ -23,3 +23,6 @@ export type { PineconeConfig } from './types.js';
 
 export { WeaviateAdapter } from './weaviate.js';
 export type { WeaviateConfig } from './types.js';
+
+export { ChromaAdapter } from './chroma.js';
+export type { ChromaConfig } from './types.js';

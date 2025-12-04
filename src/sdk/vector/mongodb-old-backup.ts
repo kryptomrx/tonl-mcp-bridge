@@ -12,7 +12,7 @@ import type {
   IndexRecommendation
 } from './types.js';
 
-const COLLECTION_TEMPLATES: Record<CollectionTemplate, any> = {
+const COLLECTION_TEMPLATES: Partial<Record<CollectionTemplate, any>> = {
   'rag-documents': {
     description: 'RAG (Retrieval-Augmented Generation) document storage',
     fields: {
@@ -415,7 +415,7 @@ export class MongoDBAdapter extends BaseVectorAdapter {
     console.log(`   Vector index: ${field} (${dimensions} dimensions, ${similarity})`);
   }
 
-  static getTemplates(): Record<CollectionTemplate, any> {
+  static getTemplates(): Partial<Record<CollectionTemplate, any>> {
     return COLLECTION_TEMPLATES;
   }
 
