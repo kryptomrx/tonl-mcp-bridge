@@ -1,5 +1,6 @@
 import { validateAndMergeSchemas, TypeName, flattenObject } from './type-detector.js';
 import { TonlValidationError, TonlSchemaError } from '../utils/errors.js';
+import { anonymizeData, AnonymizeMode } from './privacy.js';
 
 export function typeNameToTonl(type: TypeName): string {
   const typeMap: Record<TypeName, string> = {
@@ -61,7 +62,7 @@ export function formatValue(value: unknown): string {
 }
 
 function formatNestedValue(value: unknown): string {
-  if (value === null) return 'null';
+  if (value === null || value === undefined) return 'null';
   if (typeof value === 'object' && !Array.isArray(value)) {
      const entries = Object.entries(value as Record<string, unknown>);
      const formatted = entries.map(([k, v]) => `${k}:${formatNestedValue(v)}`);
@@ -73,13 +74,19 @@ function formatNestedValue(value: unknown): string {
   return formatValue(value).replace(/"/g, '');
 }
 
+export interface JsonToTonlOptions {
+  /** Flatten nested objects into dot-notation keys */
+  flattenNested?: boolean;
+  /** Field names to anonymize (supports nested paths like 'user.email') */
+  anonymize?: string[];
+  /** Anonymization mode: 'redact' (default) or 'mask' (smart masking) */
+  mask?: boolean;
+}
+
 export function jsonToTonl(
   data: Record<string, unknown>[],
   name: string = 'data',
-  options: { 
-    flattenNested?: boolean;
-    anonymize?: string[]; // <-- NEU: Liste von Keys, die maskiert werden
-  } = {}
+  options: JsonToTonlOptions = {}
 ): string {
   if (!Array.isArray(data)) {
     throw new TonlValidationError('Input must be an array of objects');
@@ -89,21 +96,28 @@ export function jsonToTonl(
   }
 
   try {
-    const processedData = options.flattenNested ? data.map((obj) => flattenObject(obj)) : data;
-    const schema = validateAndMergeSchemas(processedData);
-    const header = buildTonlHeader(name, data.length, schema);
+    // Step 1: Flatten first (if needed) so anonymization can match flattened keys
+    let processedData = data;
+    if (options.flattenNested) {
+      processedData = processedData.map((obj) => flattenObject(obj));
+    }
     
-    // Set für schnelleren Lookup
-    const sensitiveKeys = new Set(options.anonymize || []);
+    // Step 2: Privacy preprocessing 🛡️
+    if (options.anonymize && options.anonymize.length > 0) {
+      const mode: AnonymizeMode = options.mask ? 'mask' : 'redact';
+      processedData = anonymizeData(processedData, {
+        fields: options.anonymize,
+        mode
+      });
+    }
+    
+    // Step 3: Build TONL
+    const schema = validateAndMergeSchemas(processedData);
+    const header = buildTonlHeader(name, processedData.length, schema);
 
     const rows = processedData.map((obj, index) => {
       try {
         const values = Object.keys(schema).map((key) => {
-          // 🛡️ PRIVACY CHECK
-          if (sensitiveKeys.has(key)) {
-            return '"[REDACTED]"';
-          }
-
           const value = obj[key];
           const type = schema[key];
           

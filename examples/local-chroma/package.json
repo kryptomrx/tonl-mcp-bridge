@@ -1,0 +1,19 @@
+{
+  "name": "local-chroma-tonl",
+  "version": "1.0.0",
+  "description": "Local ChromaDB with TONL - Zero configuration, no Docker needed",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "setup": "node setup.js",
+    "clean": "rm -rf ./chroma_data"
+  },
+  "dependencies": {
+    "chromadb": "^1.7.0",
+    "openai": "^4.20.0",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "tonl-mcp-bridge": "file:../.."
+  }
+}

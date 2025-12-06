@@ -1,0 +1,17 @@
+{
+  "name": "chatbot-logs-tonl",
+  "version": "1.0.0",
+  "description": "Transform Stream for NDJSON log compression - Real-time TONL processing",
+  "type": "module",
+  "scripts": {
+    "demo": "node stream-demo.js",
+    "compress": "node compress-logs.js",
+    "generate": "node generate-logs.js"
+  },
+  "dependencies": {
+    "ndjson": "^2.0.0"
+  },
+  "devDependencies": {
+    "tonl-mcp-bridge": "file:../.."
+  }
+}

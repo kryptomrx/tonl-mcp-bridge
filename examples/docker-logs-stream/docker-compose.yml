@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  # TONL Server
+  tonl-server:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - ../..:/app
+    ports:
+      - "3000:3000"
+    command: npm run mcp:start
+    environment:
+      - PORT=3000
+      - TONL_AUTH_TOKEN=${TONL_AUTH_TOKEN:-}
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O-", "http://localhost:3000/metrics"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Demo App (generates logs)
+  demo-app:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    labels:
+      - "tonl.stream=true"
+  
+  # Log Streamer
+  log-streamer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - TONL_SERVER=http://tonl-server:3000
+      - CONTAINERS=demo-app
+    depends_on:
+      tonl-server:
+        condition: service_healthy
+      demo-app:
+        condition: service_started

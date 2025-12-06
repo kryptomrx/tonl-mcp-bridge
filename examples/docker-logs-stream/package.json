@@ -1,0 +1,16 @@
+{
+  "name": "docker-logs-stream-tonl",
+  "version": "1.0.0",
+  "description": "Stream Docker container logs to TONL format in real-time",
+  "type": "module",
+  "scripts": {
+    "start": "node stream-docker-logs.js",
+    "demo": "node demo.js"
+  },
+  "dependencies": {
+    "dockerode": "^4.0.2"
+  },
+  "devDependencies": {
+    "tonl-mcp-bridge": "file:../.."
+  }
+}

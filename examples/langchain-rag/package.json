@@ -1,0 +1,21 @@
+{
+  "name": "langchain-rag-tonl",
+  "version": "1.0.0",
+  "description": "LangChain RAG with TONL compression - Copy-paste ready",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "setup": "node setup.js"
+  },
+  "dependencies": {
+    "@langchain/openai": "^0.0.19",
+    "@langchain/core": "^0.1.20",
+    "langchain": "^0.1.20",
+    "qdrant-client": "^1.8.0",
+    "openai": "^4.20.0",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "tonl-mcp-bridge": "file:../.."
+  }
+}

@@ -6,11 +6,43 @@
  */
 
 import { startHttpServer } from './server.js';
+import { getAvailablePort } from './utils/port.js';
+import crypto from 'crypto';
 
 async function main() {
-  const PORT = process.env.PORT || 3000;
+  // 1. Preferred port from env or default
+  const preferredPort = parseInt(process.env.PORT || '3000', 10);
   
   try {
+    // 2. Port Hunting: Find an available port
+    const PORT = await getAvailablePort(preferredPort);
+
+    // 3. Warning if we had to use a different port
+    if (PORT !== preferredPort) {
+      console.log(`\n⚠️  Port ${preferredPort} was busy, using available port ${PORT} instead.\n`);
+    }
+
+    // --- 🔐 ZERO-CONFIG SECURITY FEATURE ---
+    // If no token is set, generate one automatically for this session
+    if (!process.env.TONL_AUTH_TOKEN) {
+      const generatedToken = crypto.randomUUID();
+      process.env.TONL_AUTH_TOKEN = generatedToken;
+
+      // Beautiful box output for maximum visibility (no external dependencies)
+      console.log('\n┌──────────────────────────────────────────────────────────────────────┐');
+      console.log('│  🔐  NO TOKEN FOUND - AUTO-GENERATED FOR SESSION                     │');
+      console.log('├──────────────────────────────────────────────────────────────────────┤');
+      console.log('│                                                                      │');
+      console.log(`│  Token: ${generatedToken}  │`);
+      console.log('│                                                                      │');
+      console.log('├──────────────────────────────────────────────────────────────────────┤');
+      console.log('│  👉 Copy this to your Claude Desktop / Cursor Config                 │');
+      console.log('│  💡 To persist: export TONL_AUTH_TOKEN=<token>                       │');
+      console.log('│  ⚠️  This token is valid ONLY for this running session               │');
+      console.log('└──────────────────────────────────────────────────────────────────────┘\n');
+    }
+    // ---------------------------------------
+
     const server = startHttpServer(PORT);
 
     // Graceful Shutdown Logic (Critical for Docker!)
@@ -31,10 +63,12 @@ async function main() {
       });
       
       // Also close any active connections after timeout
-      setTimeout(() => {
-        console.log('⏱️  Closing remaining connections...');
-        server.closeAllConnections?.(); // Node 18.2+ feature
-      }, 5000);
+      if ('closeAllConnections' in server) {
+        setTimeout(() => {
+          console.log('⏱️  Closing remaining connections...');
+          (server as any).closeAllConnections();
+        }, 5000);
+      }
     };
 
     process.on('SIGINT', () => shutdown('SIGINT'));

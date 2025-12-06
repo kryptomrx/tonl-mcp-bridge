@@ -19,7 +19,9 @@ import {
   recordConversion,
   recordTokenSavings,
   recordCompressionRatio,
-  recordDataSize
+  recordDataSize,
+  recordError,
+  setBuildInfo
 } from './metrics.js';
 import { NdjsonParse, TonlTransform } from '../core/streams/index.js';
 
@@ -34,6 +36,7 @@ const authMiddleware = (req: express.Request, res: express.Response, next: expre
   const authHeader = req.headers.authorization;
   
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    recordError('auth');
     res.status(401).json({ error: 'Unauthorized: Missing Bearer token' });
     return;
   }
@@ -41,6 +44,7 @@ const authMiddleware = (req: express.Request, res: express.Response, next: expre
   const token = authHeader.split(' ')[1];
   
   if (token !== AUTH_TOKEN) {
+    recordError('auth');
     res.status(403).json({ error: 'Forbidden: Invalid token' });
     return;
   }
@@ -63,6 +67,57 @@ app.get('/metrics', async (req, res) => {
     console.error('Error generating metrics:', error);
     res.status(500).end('Error generating metrics');
   }
+});
+
+// --- LIVE METRICS STREAM (SSE) ---
+/**
+ * GET /metrics/live - Server-Sent Events stream for real-time monitoring
+ * 
+ * Provides live metrics updates for the CLI 'tonl top' command.
+ * Works seamlessly with remote servers (cloud deployments).
+ * 
+ * Headers:
+ *   Authorization: Bearer <token> (if TONL_AUTH_TOKEN is set)
+ * 
+ * Example:
+ *   curl -N -H "Authorization: Bearer $TOKEN" http://localhost:3000/metrics/live
+ */
+app.get('/metrics/live', authMiddleware, async (req, res) => {
+  // SSE Headers
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no'); // Nginx compatibility
+
+  console.log('📊 Live metrics stream connected');
+
+  // Send initial connection event
+  res.write(`data: ${JSON.stringify({ type: 'connected', timestamp: Date.now() })}\n\n`);
+
+  // Stream metrics every second
+  const interval = setInterval(async () => {
+    try {
+      const metricsText = await getMetricsRegistry().metrics();
+      
+      // Parse and send as JSON for easier CLI consumption
+      const snapshot = {
+        type: 'metrics',
+        timestamp: Date.now(),
+        data: metricsText,
+      };
+      
+      res.write(`data: ${JSON.stringify(snapshot)}\n\n`);
+    } catch (error) {
+      console.error('Error streaming metrics:', error);
+    }
+  }, 1000);
+
+  // Cleanup on disconnect
+  req.on('close', () => {
+    console.log('📊 Live metrics stream disconnected');
+    clearInterval(interval);
+    res.end();
+  });
 });
 
 // --- STREAMING ENDPOINT ---
@@ -141,6 +196,7 @@ app.post('/stream/convert', async (req, res) => {
     recordDataSize(bytesOut, 'tonl_output');
     
   } catch (error) {
+    recordError('stream');
     console.error('Stream error:', error);
     
     // Only send error if headers haven't been sent yet
@@ -185,6 +241,7 @@ function createMcpServer(): McpServer {
         const result = await convertToTonlHandler(validated);
         
         if (!result.success) {
+          recordError('validation');
           return {
             isError: true,
             content: [{ type: 'text', text: result.error || 'Conversion failed' }]
@@ -235,6 +292,7 @@ function createMcpServer(): McpServer {
         const result = await parseTonlHandler(validated);
 
         if (!result.success) {
+          recordError('validation');
           return {
             isError: true,
             content: [{ type: 'text', text: result.error || 'Parsing failed' }]
@@ -262,6 +320,7 @@ function createMcpServer(): McpServer {
         const result = await calculateSavingsHandler(validated);
 
         if (!result.success) {
+          recordError('validation');
           return {
             isError: true,
             content: [{ type: 'text', text: result.error || 'Calculation failed' }]
@@ -325,8 +384,9 @@ app.get('/mcp', async (req, res) => {
     await server.connect(transport);
     await transport.start();
   } catch (err) {
+    recordError('internal');
     console.error('Transport error:', err);
-    decrementConnections();
+    // Don't decrement here - the 'close' handler will do it
     if (!res.headersSent) res.status(500).end();
   }
 });
@@ -347,6 +407,7 @@ app.post('/mcp', async (req, res) => {
   try {
     await transport.handlePostMessage(req, res, req.body);
   } catch (error) {
+    recordError('internal');
     console.error('Error handling POST:', error);
     if (!res.headersSent) {
       res.status(500).json({ error: 'Internal Error' });
@@ -359,11 +420,15 @@ app.post('/mcp', async (req, res) => {
  * This function allows the server to be started programmatically (e.g. from index.ts).
  */
 export function startHttpServer(port: number | string = 3000) {
+  // Set build info on startup
+  setBuildInfo('1.0.0');
+  
   const server = app.listen(port, () => {
     console.log(`🚀 TONL MCP Server listening on port ${port}`);
     console.log(`   - SSE Stream: http://localhost:${port}/mcp`);
     console.log(`   - Log Stream: http://localhost:${port}/stream/convert`);
     console.log(`   - Metrics: http://localhost:${port}/metrics`);
+    console.log(`   - Live Monitor: http://localhost:${port}/metrics/live`);
     
     if (process.env.TONL_AUTH_TOKEN) {
       console.log(`   🔒 Security: Enabled (Bearer Token required for /mcp)`);

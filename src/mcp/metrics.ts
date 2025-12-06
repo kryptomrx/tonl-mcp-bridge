@@ -66,6 +66,20 @@ export const dataSize = new client.Histogram({
   registers: [register]
 });
 
+export const errorCounter = new client.Counter({
+  name: 'tonl_errors_total',
+  help: 'Total errors by type',
+  labelNames: ['type'],
+  registers: [register]
+});
+
+export const buildInfo = new client.Gauge({
+  name: 'tonl_build_info',
+  help: 'Build information',
+  labelNames: ['version'],
+  registers: [register]
+});
+
 export const MODEL_PRICING: Record<string, number> = {
   'gpt-4o': 2.50,
   'gpt-4o-mini': 0.15,
@@ -138,4 +152,12 @@ export function getMetricsRegistry(): client.Registry {
 
 export function resetMetrics(): void {
   register.resetMetrics();
+}
+
+export function recordError(type: 'auth' | 'validation' | 'internal' | 'stream'): void {
+  errorCounter.inc({ type });
+}
+
+export function setBuildInfo(version: string): void {
+  buildInfo.set({ version }, 1);
 }

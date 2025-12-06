@@ -33,6 +33,7 @@ import { glob } from 'glob';
 import { formatAsJSON, formatAsMarkdown } from './commands/formatters.js';
 import { formatFileNotFoundError, formatJSONError } from './utils/error-helpers.js';
 import { NdjsonParse, TonlTransform } from '../core/streams/index.js';
+import { topCommand, TopCommandOptions } from './commands/top.js'; // .js extension works for both .ts and .tsx
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -464,5 +465,21 @@ program
     }
   });
 
+
+// Top command (live monitoring)
+program
+  .command('top')
+  .description('Live server monitoring (like htop for TONL)')
+  .option('-u, --url <url>', 'Server metrics URL', 'http://localhost:3000/metrics')
+  .option('-i, --interval <ms>', 'Refresh interval in milliseconds', '1000')
+  .option('--no-stream', 'Disable SSE streaming (use polling instead)')
+  .action((options: any) => {
+    const commandOptions: TopCommandOptions = {
+      url: options.url,
+      interval: parseInt(options.interval),
+      stream: options.stream !== false, // Handle --no-stream flag
+    };
+    topCommand(commandOptions);
+  });
 
 program.parse();
