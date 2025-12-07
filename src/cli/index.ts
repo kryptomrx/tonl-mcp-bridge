@@ -6,7 +6,7 @@
  */
 
 import { Command } from 'commander';
-import { readFileSync, writeFileSync, createReadStream, createWriteStream } from 'fs';
+import { readFileSync, writeFileSync, createReadStream, createWriteStream, existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { pipeline } from 'stream/promises';
@@ -33,7 +33,7 @@ import { glob } from 'glob';
 import { formatAsJSON, formatAsMarkdown } from './commands/formatters.js';
 import { formatFileNotFoundError, formatJSONError } from './utils/error-helpers.js';
 import { NdjsonParse, TonlTransform } from '../core/streams/index.js';
-import { topCommand, TopCommandOptions } from './commands/top.js'; // .js extension works for both .ts and .tsx
+import { topCommand, TopCommandOptions } from './commands/top.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -45,6 +45,39 @@ program
   .name('tonl')
   .description('Convert between JSON, YAML, and TONL formats for token optimization')
   .version(packageJson.version);
+
+// Help command - Show comprehensive commands reference
+program
+  .command('help')
+  .description('Show comprehensive commands reference')
+  .argument('[command]', 'Show help for specific command')
+  .action((command?: string) => {
+    if (command) {
+      // Show help for specific command
+      program.commands.find(cmd => cmd.name() === command)?.help();
+    } else {
+      // Show COMMANDS.md if available
+      const commandsPath = join(__dirname, '../../COMMANDS.md');
+      if (existsSync(commandsPath)) {
+        const content = readFileSync(commandsPath, 'utf-8');
+        console.log(content);
+      } else {
+        // Fallback to default help
+        console.log('TONL-MCP Bridge - Quick Reference\n');
+        console.log('Most Common Commands:\n');
+        console.log('  tonl convert data.json            Convert JSON to TONL');
+        console.log('  tonl convert data.json -s         Convert with statistics');
+        console.log('  tonl top                          Monitor server metrics');
+        console.log('  tonl-mcp-server                   Start MCP server');
+        console.log('  tonl roi --savings 45 --queries-per-day 1000   Calculate ROI');
+        console.log('  tonl analyze data.json            Analyze token usage');
+        console.log('\nFor detailed documentation:');
+        console.log('  Full commands: https://github.com/kryptomrx/tonl-mcp-bridge/blob/main/COMMANDS.md');
+        console.log('  Documentation: https://tonl-mcp-bridge-docs.vercel.app/');
+        console.log('\nRun "tonl <command> --help" for command-specific help');
+      }
+    }
+  });
 
 program
   .command('convert')
@@ -191,11 +224,10 @@ program
   });
 
 // Watch command
-// Watch command
 program
   .command('watch')
   .argument('<pattern>', 'File pattern to watch (e.g., *.json or data/*.json)')
-  .option('-n, --name <name>', 'Collection name for TONL output', 'data')
+  .option('-n, --name <n>', 'Collection name for TONL output', 'data')
   .option('-o, --output-dir <dir>', 'Output directory for converted files')
   .description('Watch files for changes and auto-convert')
   .action((pattern: string, options: any) => {
@@ -223,7 +255,7 @@ program
 program
   .command('batch')
   .argument('<pattern>', 'File pattern to convert (e.g., "*.json" or "data/*.json")')
-  .option('-n, --name <name>', 'Collection name for TONL output', 'data')
+  .option('-n, --name <n>', 'Collection name for TONL output', 'data')
   .option('-o, --output-dir <dir>', 'Output directory for converted files')
   .option('-s, --stats', 'Show conversion statistics')
   .description('Convert multiple files at once')
@@ -419,7 +451,7 @@ program
   .description('Stream NDJSON from stdin and convert to TONL')
   .option('-i, --input <file>', 'Input file (default: stdin)')
   .option('-o, --output <file>', 'Output file (default: stdout)')
-  .option('-n, --name <name>', 'Collection name', 'data')
+  .option('-n, --name <n>', 'Collection name', 'data')
   .option('--skip-invalid', 'Skip invalid JSON lines', true)
   .option('--stats', 'Show statistics at end')
   .action(async (options: any) => {

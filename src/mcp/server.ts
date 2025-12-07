@@ -1,4 +1,6 @@
 import express from 'express';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { pipeline } from 'stream/promises';
@@ -28,6 +30,31 @@ import { NdjsonParse, TonlTransform } from '../core/streams/index.js';
 // --- SECURITY CONFIGURATION ---
 const AUTH_TOKEN = process.env.TONL_AUTH_TOKEN;
 
+// Auto-generated session tokens (only valid for single session)
+const sessionTokens = new Map<string, { token: string; expiresAt: number }>();
+
+/**
+ * Generate a secure random token for session
+ */
+function generateSessionToken(): string {
+  return crypto.randomUUID() + '-' + Date.now().toString(36);
+}
+
+/**
+ * Clean up expired session tokens (older than 1 hour)
+ */
+function cleanupExpiredTokens() {
+  const now = Date.now();
+  for (const [sessionId, data] of sessionTokens.entries()) {
+    if (data.expiresAt < now) {
+      sessionTokens.delete(sessionId);
+    }
+  }
+}
+
+// Cleanup expired tokens every 10 minutes
+setInterval(cleanupExpiredTokens, 10 * 60 * 1000);
+
 // --- AUTH MIDDLEWARE ---
 const authMiddleware = (req: express.Request, res: express.Response, next: express.NextFunction) => {
   // Skip auth if no token is configured (development mode)
@@ -43,18 +70,67 @@ const authMiddleware = (req: express.Request, res: express.Response, next: expre
 
   const token = authHeader.split(' ')[1];
   
-  if (token !== AUTH_TOKEN) {
-    recordError('auth');
-    res.status(403).json({ error: 'Forbidden: Invalid token' });
-    return;
+  // Check permanent token first
+  if (token === AUTH_TOKEN) {
+    return next();
   }
-
-  next();
+  
+  // Check session tokens
+  for (const [sessionId, data] of sessionTokens.entries()) {
+    if (data.token === token && data.expiresAt > Date.now()) {
+      return next();
+    }
+  }
+  
+  recordError('auth');
+  res.status(403).json({ error: 'Forbidden: Invalid token' });
 };
 
 const app = express();
 
+// --- SECURITY MIDDLEWARE ---
+app.use(helmet({
+  contentSecurityPolicy: false, // SSE needs this disabled
+  crossOriginEmbedderPolicy: false
+}));
+
+// --- RATE LIMITING ---
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 app.use(express.json({ limit: '50mb' }));
+
+// --- HEALTH CHECK ENDPOINTS ---
+/**
+ * GET /health - Liveness probe
+ * Returns 200 if server process is running
+ */
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'healthy',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString()
+  });
+});
+
+/**
+ * GET /ready - Readiness probe
+ * Returns 200 if server is ready to accept traffic
+ */
+app.get('/ready', (req, res) => {
+  // Check if server is initialized and ready
+  // For now, if we're here, we're ready
+  // Future: Check DB connections, external dependencies
+  res.status(200).json({
+    status: 'ready',
+    timestamp: new Date().toISOString()
+  });
+});
 
 // --- ROUTES (before middleware) ---
 
@@ -120,7 +196,7 @@ app.get('/metrics/live', authMiddleware, async (req, res) => {
   });
 });
 
-// --- STREAMING ENDPOINT ---
+// --- STREAMING ENDPOINT (with rate limiting) ---
 /**
  * POST /stream/convert - Convert NDJSON stream to TONL stream
  * 
@@ -140,7 +216,7 @@ app.get('/metrics/live', authMiddleware, async (req, res) => {
  *        -H "Content-Type: application/x-ndjson" \
  *        --data-binary @logs.ndjson
  */
-app.post('/stream/convert', async (req, res) => {
+app.post('/stream/convert', limiter, async (req, res) => {
   const collectionName = (req.query.collection as string) || 'data';
   const skipInvalid = req.query.skipInvalid !== 'false';
   
@@ -364,6 +440,17 @@ app.get('/mcp', async (req, res) => {
   // Use provided sessionId or generate new one
   const sessionId = (req.query.sessionId as string) || crypto.randomUUID();
   
+  // Generate session token if no global token is set
+  let sessionToken: string | undefined;
+  if (!AUTH_TOKEN) {
+    sessionToken = generateSessionToken();
+    sessionTokens.set(sessionId, {
+      token: sessionToken,
+      expiresAt: Date.now() + (60 * 60 * 1000) // 1 hour
+    });
+    console.log(`🔑 Generated session token for ${sessionId} (valid for 1 hour)`);
+  }
+  
   console.log(`-> New SSE connection: ${sessionId}`);
   
   // Track connection
@@ -378,10 +465,21 @@ app.get('/mcp', async (req, res) => {
     console.log(`<- Connection closed: ${sessionId}`);
     decrementConnections();
     delete transports[sessionId];
+    // Clean up session token
+    if (sessionToken) {
+      sessionTokens.delete(sessionId);
+    }
   });
 
   try {
     await server.connect(transport);
+    
+    // Send session token in initial message if generated
+    if (sessionToken) {
+      res.write(`event: session-token\n`);
+      res.write(`data: ${JSON.stringify({ token: sessionToken, expiresIn: 3600 })}\n\n`);
+    }
+    
     await transport.start();
   } catch (err) {
     recordError('internal');
@@ -415,6 +513,9 @@ app.post('/mcp', async (req, res) => {
   }
 });
 
+// Track server instance for graceful shutdown
+let serverInstance: ReturnType<typeof app.listen> | null = null;
+
 /**
  * Starts the HTTP server.
  * This function allows the server to be started programmatically (e.g. from index.ts).
@@ -423,22 +524,71 @@ export function startHttpServer(port: number | string = 3000) {
   // Set build info on startup
   setBuildInfo('1.0.0');
   
-  const server = app.listen(port, () => {
+  serverInstance = app.listen(port, () => {
     console.log(`🚀 TONL MCP Server listening on port ${port}`);
     console.log(`   - SSE Stream: http://localhost:${port}/mcp`);
     console.log(`   - Log Stream: http://localhost:${port}/stream/convert`);
     console.log(`   - Metrics: http://localhost:${port}/metrics`);
     console.log(`   - Live Monitor: http://localhost:${port}/metrics/live`);
+    console.log(`   - Health: http://localhost:${port}/health`);
+    console.log(`   - Ready: http://localhost:${port}/ready`);
     
     if (process.env.TONL_AUTH_TOKEN) {
       console.log(`   🔒 Security: Enabled (Bearer Token required for /mcp)`);
     } else {
-      console.warn(`   ⚠️  Security: Disabled (No TONL_AUTH_TOKEN set)`);
+      console.warn(`   ⚠️  Security: Development mode (Auto-generated session tokens)`);
+      console.warn(`   💡 Set TONL_AUTH_TOKEN for production use`);
     }
   });
 
-  return server;
+  return serverInstance;
 }
+
+/**
+ * Gracefully shut down the server
+ */
+export async function shutdown(): Promise<void> {
+  if (!serverInstance) {
+    console.log('Server not running, nothing to shut down');
+    return;
+  }
+
+  console.log('🛑 Shutting down gracefully...');
+  
+  return new Promise((resolve, reject) => {
+    // Stop accepting new connections
+    serverInstance!.close((err) => {
+      if (err) {
+        console.error('Error during shutdown:', err);
+        reject(err);
+        return;
+      }
+      
+      console.log('✅ Server shut down successfully');
+      serverInstance = null;
+      resolve();
+    });
+
+    // Force shutdown after 30 seconds
+    setTimeout(() => {
+      console.log('⚠️  Forcing shutdown after timeout');
+      process.exit(1);
+    }, 30000);
+  });
+}
+
+// --- SIGNAL HANDLERS FOR GRACEFUL SHUTDOWN ---
+process.on('SIGTERM', async () => {
+  console.log('SIGTERM received');
+  await shutdown();
+  process.exit(0);
+});
+
+process.on('SIGINT', async () => {
+  console.log('SIGINT received');
+  await shutdown();
+  process.exit(0);
+});
 
 // --- AUTO-START (Only if run directly) ---
 // This allows `node dist/mcp/server.js` to work as expected,

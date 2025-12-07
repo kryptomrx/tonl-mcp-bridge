@@ -17,7 +17,7 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
-    "test": "NODE_OPTIONS='--max-old-space-size=8192' vitest run; TEST_EXIT=$?; echo ''; echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'; if [ $TEST_EXIT -ne 0 ]; then echo '⚠️  Note: "Worker exited unexpectedly" is a known Vitest issue (see KNOWN_ISSUES.md)'; echo '✅ Check the test results above - if tests passed, the code is working correctly!'; echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'; fi; exit $TEST_EXIT",
+    "test": "NODE_OPTIONS='--max-old-space-size=8192' vitest run; TEST_EXIT=$?; echo ''; echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'; if [ $TEST_EXIT -ne 0 ]; then echo '⚠️  Note: \"Worker exited unexpectedly\" is a known Vitest issue (see KNOWN_ISSUES.md)'; echo '✅ Check the test results above - if tests passed, the code is working correctly!'; echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'; fi; exit $TEST_EXIT",
     "test:watch": "vitest",
     "prepublishOnly": "npm run build && npm test",
     "cli": "npm run build && node dist/cli/index.js",
@@ -71,7 +71,9 @@
     "commander": "^12.1.0",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
+    "express-rate-limit": "^7.5.0",
     "glob": "^13.0.0",
+    "helmet": "^8.0.0",
     "ink": "^6.5.1",
     "ink-big-text": "^2.0.0",
     "ink-gradient": "^3.0.0",
