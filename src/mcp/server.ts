@@ -4,6 +4,7 @@ import rateLimit from 'express-rate-limit';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { pipeline } from 'stream/promises';
+import fs from 'fs';
 import {
   ConvertToTonlSchema,
   ParseTonlSchema,
@@ -546,18 +547,29 @@ export function startHttpServer(port: number | string = 3000) {
   setBuildInfo('1.0.0');
   
   serverInstance = app.listen(port, () => {
+    // Dynamic host display - shows actual accessible address
+    const displayHost = process.env.HOST || '0.0.0.0';
+    const isDocker = process.env.DOCKER || fs.existsSync('/.dockerenv');
+    
     console.log(`🚀 TONL MCP Server listening on port ${port}`);
-    console.log(`   - SSE Stream: http://localhost:${port}/mcp`);
-    console.log(`   - Log Stream: http://localhost:${port}/stream/convert`);
-    console.log(`   - Metrics: http://localhost:${port}/metrics`);
-    console.log(`   - Live Monitor: http://localhost:${port}/metrics/live`);
-    console.log(`   - Health: http://localhost:${port}/health`);
-    console.log(`   - Ready: http://localhost:${port}/ready`);
+    console.log(`   📍 Access at: http://${displayHost}:${port}`);
+    
+    if (isDocker) {
+      console.log(`   🐳 Running in Docker - access via host IP`);
+    }
+    
+    console.log(`\n   Available Endpoints:`);
+    console.log(`   - SSE Stream:    /mcp`);
+    console.log(`   - Log Stream:    /stream/convert`);
+    console.log(`   - Metrics:       /metrics`);
+    console.log(`   - Live Monitor:  /metrics/live`);
+    console.log(`   - Health:        /health`);
+    console.log(`   - Ready:         /ready`);
     
     if (process.env.TONL_AUTH_TOKEN) {
-      console.log(`   🔒 Security: Enabled (Bearer Token required for /mcp)`);
+      console.log(`\n   🔒 Security: Enabled (Bearer Token required for /mcp)`);
     } else {
-      console.warn(`   ⚠️  Security: Development mode (Auto-generated session tokens)`);
+      console.warn(`\n   ⚠️  Security: Development mode (Auto-generated session tokens)`);
       console.warn(`   💡 Set TONL_AUTH_TOKEN for production use`);
     }
     

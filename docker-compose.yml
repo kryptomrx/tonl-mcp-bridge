@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  tonl-server:
+    image: ghcr.io/kryptomrx/tonl-mcp-bridge:latest
+    container_name: tonl-mcp-server
+    ports:
+      - "3000:3000"
+    environment:
+      # Required: Set your auth token
+      - TONL_AUTH_TOKEN=${TONL_AUTH_TOKEN}
+      
+      # Optional: Rate limiting (defaults shown)
+      - TONL_RATE_LIMIT_ENABLED=true
+      - TONL_RATE_LIMIT_WINDOW_MS=900000  # 15 minutes
+      - TONL_RATE_LIMIT_MAX=100           # 100 requests
+      
+      # Optional: Server config
+      - NODE_ENV=production
+      - PORT=3000
+    
+    # Resource limits (adjust based on load)
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    
+    # Health checks
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    
+    # Restart policy
+    restart: unless-stopped
+    
+    # Optional: Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# Optional: For monitoring with Prometheus
+# Uncomment if you want to scrape metrics
+#  prometheus:
+#    image: prom/prometheus:latest
+#    container_name: prometheus
+#    ports:
+#      - "9090:9090"
+#    volumes:
+#      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+#      - prometheus_data:/prometheus
+#    command:
+#      - '--config.file=/etc/prometheus/prometheus.yml'
+#      - '--storage.tsdb.path=/prometheus'
+#    restart: unless-stopped
+#
+#volumes:
+#  prometheus_data:

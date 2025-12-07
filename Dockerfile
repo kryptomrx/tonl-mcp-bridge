@@ -29,6 +29,11 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 
+# Rate limiting defaults (can be overridden)
+ENV TONL_RATE_LIMIT_ENABLED=true
+ENV TONL_RATE_LIMIT_WINDOW_MS=900000
+ENV TONL_RATE_LIMIT_MAX=100
+
 # Install ONLY production dependencies to keep image small
 COPY package*.json ./
 RUN npm ci --only=production
@@ -43,9 +48,9 @@ USER tonl
 # Expose the MCP HTTP port
 EXPOSE 3000
 
-# Health check (optional, requires /health endpoint in server)
-# HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-#   CMD node -e "require('http').get('http://localhost:3000/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))" || exit 1
+# Health check - uses /health endpoint
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"
 
 # Start the MCP HTTP/SSE Server via index.js (entry point with graceful shutdown)
 CMD ["node", "dist/mcp/index.js"]
