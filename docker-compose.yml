@@ -10,6 +10,10 @@ services:
       # Required: Set your auth token
       - TONL_AUTH_TOKEN=${TONL_AUTH_TOKEN}
       
+      # Optional: External access (for display in logs)
+      - EXTERNAL_HOST=${EXTERNAL_HOST:-localhost}
+      - EXTERNAL_PORT=${EXTERNAL_PORT:-3000}
+      
       # Optional: Rate limiting (defaults shown)
       - TONL_RATE_LIMIT_ENABLED=true
       - TONL_RATE_LIMIT_WINDOW_MS=900000  # 15 minutes

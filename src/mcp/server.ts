@@ -547,15 +547,26 @@ export function startHttpServer(port: number | string = 3000) {
   setBuildInfo('1.0.0');
   
   serverInstance = app.listen(port, () => {
-    // Dynamic host display - shows actual accessible address
-    const displayHost = process.env.HOST || '0.0.0.0';
+    // Dynamic host/port display - can be overridden for external access
+    const externalHost = process.env.EXTERNAL_HOST || process.env.HOST || '0.0.0.0';
+    const externalPort = process.env.EXTERNAL_PORT || port;
     const isDocker = process.env.DOCKER || fs.existsSync('/.dockerenv');
     
     console.log(`🚀 TONL MCP Server listening on port ${port}`);
-    console.log(`   📍 Access at: http://${displayHost}:${port}`);
+    
+    // Show external access URL if different from internal
+    if (externalHost !== '0.0.0.0' || externalPort != port) {
+      console.log(`   🌍 External: http://${externalHost}:${externalPort}`);
+      console.log(`   📦 Internal: http://0.0.0.0:${port}`);
+    } else {
+      console.log(`   📍 Access at: http://${externalHost}:${port}`);
+    }
     
     if (isDocker) {
-      console.log(`   🐳 Running in Docker - access via host IP`);
+      console.log(`   🐳 Running in Docker`);
+      if (externalHost === '0.0.0.0') {
+        console.log(`   💡 Tip: Set EXTERNAL_HOST and EXTERNAL_PORT for display`);
+      }
     }
     
     console.log(`\n   Available Endpoints:`);
