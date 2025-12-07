@@ -528,12 +528,14 @@ program
   .description('Live server monitoring (like htop for TONL)')
   .option('-u, --url <url>', 'Server metrics URL', 'http://localhost:3000/metrics')
   .option('-i, --interval <ms>', 'Refresh interval in milliseconds', '1000')
+  .option('-t, --token <token>', 'Auth token (or use TONL_AUTH_TOKEN env var)')
   .option('--no-stream', 'Disable SSE streaming (use polling instead)')
   .action((options: any) => {
     const commandOptions: TopCommandOptions = {
       url: options.url,
       interval: parseInt(options.interval),
       stream: options.stream !== false, // Handle --no-stream flag
+      token: options.token, // Pass token from CLI
     };
     topCommand(commandOptions);
   });

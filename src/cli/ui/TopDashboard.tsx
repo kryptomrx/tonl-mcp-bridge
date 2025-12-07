@@ -6,12 +6,14 @@ interface TopDashboardProps {
   serverUrl?: string;
   refreshInterval?: number;
   useStream?: boolean; // NEW: Enable/disable SSE streaming
+  authToken?: string; // Auth token for protected endpoints
 }
 
 export function TopDashboard({ 
   serverUrl = 'http://localhost:3000/metrics',
   refreshInterval = 1000,
-  useStream = true // NEW: Use SSE stream by default
+  useStream = true, // NEW: Use SSE stream by default
+  authToken // Auth token from environment
 }: TopDashboardProps) {
   const { exit } = useApp();
   const [snapshot, setSnapshot] = useState<MetricsSnapshot | null>(null);
@@ -32,7 +34,7 @@ export function TopDashboard({
         // Use /metrics/live endpoint for streaming
         const streamUrl = serverUrl.replace('/metrics', '/metrics/live');
         
-        for await (const snapshot of streamMetrics(streamUrl)) {
+        for await (const snapshot of streamMetrics(streamUrl, authToken)) {
           if (!mounted) break;
           
           setSnapshot(snapshot);
@@ -143,7 +145,9 @@ export function TopDashboard({
   };
 
   const createBar = (percentage: number, width: number = 20): string => {
-    const filled = Math.round((percentage / 100) * width);
+    // Clamp percentage between 0 and 100
+    const clampedPercentage = Math.max(0, Math.min(100, percentage || 0));
+    const filled = Math.round((clampedPercentage / 100) * width);
     return '█'.repeat(filled) + '░'.repeat(width - filled);
   };
 

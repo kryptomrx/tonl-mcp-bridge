@@ -95,13 +95,18 @@ app.use(helmet({
 }));
 
 // --- RATE LIMITING ---
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+// Configurable via environment variables
+const RATE_LIMIT_ENABLED = process.env.TONL_RATE_LIMIT_ENABLED !== 'false'; // Default: true
+const RATE_LIMIT_WINDOW_MS = parseInt(process.env.TONL_RATE_LIMIT_WINDOW_MS || '900000'); // Default: 15 min
+const RATE_LIMIT_MAX = parseInt(process.env.TONL_RATE_LIMIT_MAX || '100'); // Default: 100 req
+
+const limiter = RATE_LIMIT_ENABLED ? rateLimit({
+  windowMs: RATE_LIMIT_WINDOW_MS,
+  max: RATE_LIMIT_MAX,
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
-});
+}) : (req: express.Request, res: express.Response, next: express.NextFunction) => next();
 
 app.use(express.json({ limit: '50mb' }));
 
@@ -244,7 +249,7 @@ app.post('/stream/convert', limiter, async (req, res) => {
     const parser = new NdjsonParse({ skipInvalid });
     const transform = new TonlTransform({ collectionName, skipInvalid });
 
-    // Track metrics
+    // Track metrics (without buffering entire payload for large streams)
     req.on('data', (chunk) => {
       bytesIn += chunk.length;
     });
@@ -264,12 +269,28 @@ app.post('/stream/convert', limiter, async (req, res) => {
     linesProcessed = transform.getRowCount();
     const duration = (Date.now() - startTime) / 1000;
     
-    // Log stats
-    console.log(`Stream completed: ${linesProcessed} lines, ${bytesIn}→${bytesOut} bytes, ${duration.toFixed(2)}s`);
+    // Calculate token savings estimate based on compression ratio
+    const compressionRatio = bytesOut / bytesIn;
+    const estimatedTokenSavings = Math.round(bytesIn * 0.25 * (1 - compressionRatio)); // Rough estimate
     
-    // Record metrics
+    // Record business metrics (estimated)
+    if (estimatedTokenSavings > 0) {
+      recordTokenSavings(estimatedTokenSavings, 'gpt-4o');
+      recordCompressionRatio(
+        Math.round(bytesIn * 0.25), // Estimated JSON tokens
+        Math.round(bytesOut * 0.25), // Estimated TONL tokens
+        'gpt-4o'
+      );
+    }
+    
+    console.log(`Stream completed: ${linesProcessed} lines, ${bytesIn}→${bytesOut} bytes (~${Math.round((1 - compressionRatio) * 100)}% compression), ${duration.toFixed(2)}s`);
+    
+    // Record data size metrics
     recordDataSize(bytesIn, 'json_input');
     recordDataSize(bytesOut, 'tonl_output');
+    
+    // Record successful conversion
+    await recordConversion('stream_conversion', async () => ({ success: true }));
     
   } catch (error) {
     recordError('stream');
@@ -538,6 +559,13 @@ export function startHttpServer(port: number | string = 3000) {
     } else {
       console.warn(`   ⚠️  Security: Development mode (Auto-generated session tokens)`);
       console.warn(`   💡 Set TONL_AUTH_TOKEN for production use`);
+    }
+    
+    // Rate limiting status
+    if (RATE_LIMIT_ENABLED) {
+      console.log(`   🚦 Rate Limiting: ${RATE_LIMIT_MAX} req / ${RATE_LIMIT_WINDOW_MS / 1000 / 60}min`);
+    } else {
+      console.warn(`   ⚠️  Rate Limiting: Disabled (set TONL_RATE_LIMIT_ENABLED=true to enable)`);
     }
   });
 

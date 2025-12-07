@@ -110,7 +110,7 @@ export function recordCompressionRatio(jsonTokens: number, tonlTokens: number, m
 }
 
 export async function recordConversion<T>(
-  operation: 'json_to_tonl' | 'tonl_to_json' | 'calculate_savings',
+  operation: 'json_to_tonl' | 'tonl_to_json' | 'calculate_savings' | 'stream_conversion',
   fn: () => Promise<T>
 ): Promise<T> {
   const timer = conversionDuration.startTimer({ operation });

@@ -174,11 +174,11 @@ export function createSnapshot(text: string, previousSnapshot?: MetricsSnapshot)
   };
   
   // System metrics
-  const processStartTime = getValue('process_start_time_seconds');
+  const processStartTime = getValue('tonl_process_start_time_seconds') || getValue('process_start_time_seconds');
   const uptime = processStartTime > 0 ? Date.now() / 1000 - processStartTime : 0;
   
-  const cpuUser = getValue('process_cpu_user_seconds_total');
-  const cpuSystem = getValue('process_cpu_system_seconds_total');
+  const cpuUser = getValue('tonl_process_cpu_user_seconds_total') || getValue('process_cpu_user_seconds_total');
+  const cpuSystem = getValue('tonl_process_cpu_system_seconds_total') || getValue('process_cpu_system_seconds_total');
   
   // Calculate CPU percentage (if we have previous snapshot)
   let cpuPercentage: number | undefined;
@@ -189,12 +189,12 @@ export function createSnapshot(text: string, previousSnapshot?: MetricsSnapshot)
     cpuPercentage = timeDelta > 0 ? (cpuDelta / timeDelta) * 100 : 0;
   }
   
-  const heapUsed = getValue('nodejs_heap_size_used_bytes');
-  const heapTotal = getValue('nodejs_heap_size_total_bytes');
-  const rss = getValue('process_resident_memory_bytes');
+  const heapUsed = getValue('tonl_nodejs_heap_size_used_bytes') || getValue('nodejs_heap_size_used_bytes');
+  const heapTotal = getValue('tonl_nodejs_heap_size_total_bytes') || getValue('nodejs_heap_size_total_bytes');
+  const rss = getValue('tonl_process_resident_memory_bytes') || getValue('process_resident_memory_bytes');
   const memPercentage = heapTotal > 0 ? (heapUsed / heapTotal) * 100 : 0;
   
-  const eventLoopLag = getValue('nodejs_eventloop_lag_seconds') * 1000; // Convert to ms
+  const eventLoopLag = (getValue('tonl_nodejs_eventloop_lag_seconds') || getValue('nodejs_eventloop_lag_seconds')) * 1000; // Convert to ms
   
   // TONL metrics
   const tokensSaved = sumMetrics(metrics, 'tonl_tokens_saved_total');
@@ -276,15 +276,24 @@ export async function fetchMetrics(url: string = 'http://localhost:3000/metrics'
 /**
  * Fetch metrics from server via SSE stream (live updates)
  */
-export async function* streamMetrics(url: string = 'http://localhost:3000/metrics/live'): AsyncGenerator<MetricsSnapshot> {
+export async function* streamMetrics(
+  url: string = 'http://localhost:3000/metrics/live',
+  authToken?: string
+): AsyncGenerator<MetricsSnapshot> {
   let previousSnapshot: MetricsSnapshot | null = null;
 
+  // Build headers
+  const headers: Record<string, string> = {
+    'Accept': 'text/event-stream',
+  };
+  
+  // Add auth header if token provided
+  if (authToken) {
+    headers['Authorization'] = `Bearer ${authToken}`;
+  }
+
   // Use fetch with streaming
-  const response = await fetch(url, {
-    headers: {
-      'Accept': 'text/event-stream',
-    },
-  });
+  const response = await fetch(url, { headers });
 
   if (!response.ok) {
     throw new Error(`Failed to connect to metrics stream: ${response.status} ${response.statusText}`);

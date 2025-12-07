@@ -13,12 +13,14 @@ export interface TopCommandOptions {
   url?: string;
   interval?: number;
   stream?: boolean; // Enable SSE streaming
+  token?: string; // Auth token
 }
 
 export function topCommand(options: TopCommandOptions = {}) {
   const serverUrl = options.url || process.env.TONL_SERVER_URL || 'http://localhost:3000/metrics';
   const refreshInterval = options.interval || 1000;
   const useStream = options.stream !== false; // Default: true
+  const authToken = options.token || process.env.TONL_AUTH_TOKEN; // Get token from options or env
 
   console.log('🚀 Starting TONL live monitor...');
   if (useStream) {
@@ -34,6 +36,7 @@ export function topCommand(options: TopCommandOptions = {}) {
       serverUrl,
       refreshInterval,
       useStream,
+      authToken,
     })
   );
 }
