@@ -134,9 +134,23 @@ npm install tonl-mcp-bridge
 
 ### MCP Server
 
+**stdio mode (for Claude Desktop):**
 ```bash
 npm install -g tonl-mcp-bridge
 
+# Configure in claude_desktop_config.json:
+# {
+#   "mcpServers": {
+#     "tonl": {
+#       "command": "npx",
+#       "args": ["-y", "tonl-mcp-stdio"]
+#     }
+#   }
+# }
+```
+
+**HTTP/SSE mode (for remote/Docker):**
+```bash
 # With permanent token (production)
 export TONL_AUTH_TOKEN=your-secure-token
 npx tonl-mcp-server
