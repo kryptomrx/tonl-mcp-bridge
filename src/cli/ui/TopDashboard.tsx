@@ -161,9 +161,19 @@ export function TopDashboard({
 
   // Calculate derived values
   const cpuBar = createBar(snapshot.cpu.percentage || 0);
-  const memBar = createBar(snapshot.memory.percentage || 0);
   const cpuColor = (snapshot.cpu.percentage || 0) > 80 ? 'red' : (snapshot.cpu.percentage || 0) > 50 ? 'yellow' : 'green';
-  const memColor = (snapshot.memory.percentage || 0) > 80 ? 'red' : (snapshot.memory.percentage || 0) > 50 ? 'yellow' : 'green';
+  
+  // Memory display: Show RSS (actual memory usage) for operations perspective
+  const memoryDisplay = formatBytes(snapshot.memory.rss);
+  const heapUsage = snapshot.memory.percentage || 0;
+  
+  // Memory bar based on RSS percentage of typical limit (e.g., 512MB)
+  const RSS_LIMIT = 512 * 1024 * 1024; // 512MB typical container limit
+  const rssPercentage = (snapshot.memory.rss / RSS_LIMIT) * 100;
+  const memBarRss = createBar(rssPercentage);
+  
+  // Memory color based on RSS percentage of limit
+  const memColorRss = rssPercentage > 80 ? 'red' : rssPercentage > 50 ? 'yellow' : 'green';
 
   return (
     <Box flexDirection="column" padding={1}>
@@ -189,8 +199,8 @@ export function TopDashboard({
         
         <Box>
           <Text>RAM   [</Text>
-          <Text color={memColor}>{memBar}</Text>
-          <Text>]  {formatBytes(snapshot.memory.heapUsed)} / {formatBytes(snapshot.memory.heapTotal)}</Text>
+          <Text color={memColorRss}>{memBarRss}</Text>
+          <Text>]  {memoryDisplay}  (Heap: {heapUsage.toFixed(0)}%)</Text>
         </Box>
         
         <Box>

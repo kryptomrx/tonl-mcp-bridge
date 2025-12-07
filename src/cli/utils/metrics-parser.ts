@@ -256,7 +256,7 @@ export function createSnapshot(text: string, previousSnapshot?: MetricsSnapshot)
       total: errorsTotal,
     },
     version,
-    raw: metrics,
+    raw: [], // Don't store raw metrics to prevent memory leak
   };
 }
 
@@ -306,6 +306,7 @@ export async function* streamMetrics(
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
+  const MAX_BUFFER_SIZE = 100000; // 100KB max buffer
 
   try {
     while (true) {
@@ -314,6 +315,12 @@ export async function* streamMetrics(
       if (done) break;
       
       buffer += decoder.decode(value, { stream: true });
+      
+      // Safety: Prevent buffer from growing too large
+      if (buffer.length > MAX_BUFFER_SIZE) {
+        console.warn('SSE buffer exceeded limit, clearing...');
+        buffer = buffer.slice(-MAX_BUFFER_SIZE); // Keep last 100KB only
+      }
       
       // Process complete events (SSE format: "data: {...}\n\n")
       const events = buffer.split('\n\n');
