@@ -46,36 +46,60 @@ program
   .description('Convert between JSON, YAML, and TONL formats for token optimization')
   .version(packageJson.version);
 
-// Help command - Show comprehensive commands reference
+// Help command - Show compact reference
 program
   .command('help')
-  .description('Show comprehensive commands reference')
+  .description('Show help for commands')
   .argument('[command]', 'Show help for specific command')
   .action((command?: string) => {
     if (command) {
       // Show help for specific command
-      program.commands.find(cmd => cmd.name() === command)?.help();
-    } else {
-      // Show COMMANDS.md if available
-      const commandsPath = join(__dirname, '../../COMMANDS.md');
-      if (existsSync(commandsPath)) {
-        const content = readFileSync(commandsPath, 'utf-8');
-        console.log(content);
+      const cmd = program.commands.find(c => c.name() === command);
+      if (cmd) {
+        cmd.help();
       } else {
-        // Fallback to default help
-        console.log('TONL-MCP Bridge - Quick Reference\n');
-        console.log('Most Common Commands:\n');
-        console.log('  tonl convert data.json            Convert JSON to TONL');
-        console.log('  tonl convert data.json -s         Convert with statistics');
-        console.log('  tonl top                          Monitor server metrics');
-        console.log('  tonl-mcp-server                   Start MCP server');
-        console.log('  tonl roi --savings 45 --queries-per-day 1000   Calculate ROI');
-        console.log('  tonl analyze data.json            Analyze token usage');
-        console.log('\nFor detailed documentation:');
-        console.log('  Full commands: https://github.com/kryptomrx/tonl-mcp-bridge/blob/main/COMMANDS.md');
-        console.log('  Documentation: https://tonl-mcp-bridge-docs.vercel.app/');
-        console.log('\nRun "tonl <command> --help" for command-specific help');
+        console.log(`Unknown command: ${command}`);
+        console.log('Run "tonl help" to see all commands');
       }
+    } else {
+      // Show compact help
+      console.log('TONL-MCP Bridge v' + packageJson.version);
+      console.log('Reduce LLM token costs by 40-60%\n');
+      
+      console.log('Usage: tonl <command> [options]\n');
+      
+      console.log('Commands:');
+      console.log('  convert <file>        Convert JSON/YAML ↔ TONL');
+      console.log('  analyze <file>        Analyze token usage');
+      console.log('  roi                   Calculate ROI/savings');
+      console.log('  top                   Monitor server metrics');
+      console.log('  stream                Stream NDJSON → TONL');
+      console.log('  batch <pattern>       Convert multiple files');
+      console.log('  watch <pattern>       Auto-convert on changes');
+      console.log('  help [command]        Show help\n');
+      
+      console.log('Quick Examples:');
+      console.log('  tonl convert data.json              # Convert to TONL');
+      console.log('  tonl convert data.json -s           # With statistics');
+      console.log('  tonl analyze data.json --visual     # Visual analysis');
+      console.log('  tonl roi --savings 45 --queries-per-day 1000');
+      console.log('  tonl top                            # Monitor server\n');
+      
+      console.log('Common Options:');
+      console.log('  -s, --stats           Show token statistics');
+      console.log('  -n, --name <name>     Collection name');
+      console.log('  --anonymize <fields>  Anonymize fields (email,ssn,card)');
+      console.log('  --mask                Smart masking (preserves format)');
+      console.log('  -m, --model <model>   LLM model (gpt-4o, claude-4)\n');
+      
+      console.log('Documentation:');
+      console.log('  Full docs:    https://tonl-mcp-bridge-docs.vercel.app/');
+      console.log('  Commands:     https://github.com/kryptomrx/tonl-mcp-bridge/blob/main/COMMANDS.md');
+      console.log('  GitHub:       https://github.com/kryptomrx/tonl-mcp-bridge\n');
+      
+      console.log('Get help for specific command:');
+      console.log('  tonl <command> --help');
+      console.log('  tonl help <command>');
     }
   });
 
