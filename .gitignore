@@ -57,3 +57,17 @@ data.json
 test-data.json
 test-batch/
 *.BROKEN
+
+# Temporary documentation files (cleanup artifacts)
+CHANGELOG_v*.md
+METRICS_TESTS_FIX.md
+REFACTORING_PLAN.md
+RELEASE_CHECKLIST.md
+TEST_RESULTS.md
+report.md
+
+# Test artifacts
+*.tonl
+test-logs.ndjson
+package-lock 2.json
+claude-4

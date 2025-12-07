@@ -1,3 +1,0 @@
-data[2]{id:i8,name:str,score:f32}:
-  1, Alice, 19.99
-  2, Bob, 25.5
