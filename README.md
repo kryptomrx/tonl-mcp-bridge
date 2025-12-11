@@ -106,7 +106,7 @@ TONL is architected for **structure reduction**. Savings correlate directly with
 
 **Example: Mid-Scale Logging Infrastructure**
 
-*Pricing based on GPT-4o ($2.50 per 1M input tokens, as of December 2024)*
+*Pricing based on GPT-4o ($2.50 per 1M input tokens, as of December 2025)*
 
 **Scenario:** Cloud observability platform processing Kubernetes logs
 - 100,000 log events/day
