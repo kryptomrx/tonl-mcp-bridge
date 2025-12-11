@@ -71,3 +71,10 @@ report.md
 test-logs.ndjson
 package-lock 2.json
 claude-4
+
+# Benchmark datasets (generated files, keep repo small)
+benchmarks/datasets/*.json
+benchmarks/datasets/*.ndjson
+benchmarks/datasets/*.tonl
+# But keep the README
+!benchmarks/datasets/README.md

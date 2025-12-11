@@ -1,6 +1,6 @@
 # TONL-MCP Bridge
 
-> Reduce LLM token costs by 40-60% with TONL format
+> Reduce LLM token costs by 40-60% with TONL format (Optimized for high-volume logs and repetitive data structures)
 
 [![npm version](https://img.shields.io/npm/v/tonl-mcp-bridge.svg)](https://www.npmjs.com/package/tonl-mcp-bridge)
 [![npm downloads](https://img.shields.io/npm/dm/tonl-mcp-bridge.svg)](https://www.npmjs.com/package/tonl-mcp-bridge)
@@ -10,7 +10,7 @@
 
 ## Overview
 
-TONL-MCP Bridge is a production-grade TypeScript library and CLI tool that converts JSON/YAML data to TONL (Token Optimized Natural Language) format. By eliminating JSON's structural overhead, TONL reduces token usage by 40-60% for Large Language Model context windows—translating directly to lower costs and improved performance.
+TONL-MCP Bridge is a production-grade TypeScript library and CLI tool that converts JSON/YAML data to TONL (Token Optimized Natural Language) format. By eliminating JSON's structural overhead, TONL reduces token usage for Large Language Model context windows—translating directly to lower costs and improved performance.
 
 ### Primary Use Cases
 
@@ -20,11 +20,19 @@ TONL-MCP Bridge is a production-grade TypeScript library and CLI tool that conve
 - **Real-time Streaming**: Process logs and event streams with constant memory
 - **Enterprise Compliance**: GDPR/HIPAA-ready data anonymization
 
-### When Not to Use
+### When TONL Excels
 
-- Single-object conversions (header overhead negates savings)
-- Highly inconsistent schemas (type detection becomes inefficient)
-- Systems requiring strict JSON output compatibility
+✅ **Tabular/structured data** (logs, events, analytics)  
+✅ **Repeated field structures** (API responses, database queries)  
+✅ **Large datasets** (100+ records with consistent schema)  
+✅ **High field density** (>10 fields per record)
+
+### When to Use JSON Instead
+
+❌ **Single-object conversions** (header overhead > savings)  
+❌ **Highly heterogeneous data** (many optional fields lead to sparse tables)  
+❌ **Deeply nested trees** (configuration files with complex hierarchies)  
+❌ **Small payloads** (<1KB where overhead dominates)
 
 [Read full documentation](https://tonl-mcp-bridge-docs.vercel.app/)
 
@@ -65,7 +73,60 @@ data[2]{id:i32,name:str,age:i32,email:str,active:bool}:
 
 **Cost: 75 tokens (36.4% reduction)**
 
-The savings scale with data volume—reaching 60% for datasets with 100+ records.
+The savings scale with data volume—reaching 50-60% for datasets with 100+ records and consistent schemas.
+
+## Token Savings (Verified by Benchmarks)
+
+TONL is architected for **structure reduction**. Savings correlate directly with the ratio of field names (structure) to values (content).
+
+| Use Case | Typical Savings | Best For... |
+|----------|-----------------|-------------|
+| **Enterprise Logs** | **40-50%** | Kubernetes, CloudWatch, Audit Logs (Verbose Keys) |
+| **Tabular Data** | **15-25%** | SQL Exports, User Lists, CSV-style Data |
+| **Document / RAG** | **5-10%** | Unstructured Text, Articles (Content dominates) |
+
+### Benchmark Results (v1.1.0)
+
+*Verified on Apple M4 / Node v25.2.1 using `cl100k_base` tokenizer (GPT-4o).*
+
+| Dataset Type | Records | JSON Tokens | TONL Tokens | Reduction | Lossless? |
+|--------------|---------|-------------|-------------|-----------|-----------|
+| **Enterprise Logs (Verbose)** | 1,000   | 172,603     | 92,054      | **46.7%** | ✅ Yes    |
+| **Users (Simple)** | 1,000   | 28,848      | 22,754      | **21.1%** | ✅ Yes    |
+| **RAG (Mixed)** | 200     | 43,997      | 41,343      | **6.0%**  | ✅ Yes    |
+
+> **Pro Tip:** To maximize savings, use TONL for data with repetitive, verbose keys (e.g., `http_request_duration_ms`, `kubernetes_pod_name_identifier`). For raw text-heavy payloads, standard JSON or Markdown is sufficient.
+
+**Why the variation?**
+- **Enterprise logs** have 15+ verbose field names repeated across thousands of records
+- **Tabular data** has moderate field names (5-10 fields) with simple values
+- **RAG documents** are content-heavy where structure is <10% of total tokens
+
+### Real-World Impact
+
+**Example: Mid-Scale Logging Infrastructure**
+
+*Pricing based on GPT-4o ($2.50 per 1M input tokens, as of December 2024)*
+
+**Scenario:** Cloud observability platform processing Kubernetes logs
+- 100,000 log events/day
+- 15 fields per event (verbose keys like `distributed_trace_correlation_id`)
+- JSON payload: ~170 tokens per event
+
+**Before (JSON):**
+- Daily tokens: 17M tokens (100K × 170)
+- Cost per day: $42.50 ($2.50 × 17)
+- Monthly cost: ~$1,275
+
+**After (TONL - 47% reduction):**
+- Daily tokens: 9M tokens (100K × 90)
+- Cost per day: $22.50 ($2.50 × 9)
+- Monthly cost: ~$675
+- **Monthly savings: $600**
+
+**At 1M events/day scale:** **$6,000/month saved**
+
+*Run your own benchmarks: `npm run benchmark` (see [benchmarks/README.md](./benchmarks/README.md))*
 
 ## Key Features
 
@@ -80,14 +141,14 @@ The savings scale with data volume—reaching 60% for datasets with 100+ records
 **Type System**
 - Optimized numeric types (i8, i16, i32, f32)
 - Native support for strings, booleans, null
-- Nested object handling
+- Nested object handling via dot-notation
 - Array type preservation
 
 ### Production Features (v1.0.0)
 
 **Streaming Pipeline**
 - Process gigabyte-scale files with constant memory
-- 250,000 lines/second throughput
+- 250,000 lines/second throughput (measured on M1 MacBook Pro, 100-byte lines)
 - HTTP endpoint for NDJSON to TONL conversion
 - Backpressure handling and error recovery
 
@@ -117,6 +178,38 @@ Native adapters for:
 - **ChromaDB**: Collection discovery and similarity search
 
 Each adapter includes built-in token statistics and savings calculations.
+
+## Limitations & Edge Cases
+
+### Sparse Data / Union Schemas
+
+When records have varying fields, TONL uses union schemas:
+
+```typescript
+// Heterogeneous data
+const data = [
+  { type: "user", name: "Alice", age: 30 },
+  { type: "product", name: "Widget", price: 9.99 }
+];
+
+// TONL handles via union schema
+// @items|type:s,name:s,age:n?,price:n?
+// user|Alice|30|null
+// product|Widget|null|9.99
+```
+
+- Optional fields marked with `?` suffix
+- Missing values represented as `null`
+- Token savings reduced but still present (typically 20-30%)
+
+### Performance Considerations
+
+- **Schema inference overhead:** ~1-2ms for first batch
+- **Type detection cost:** Increases with mixed-type fields
+- **Header size:** Proportional to field count (10 fields ≈ 50 tokens)
+- **Memory:** Constant usage regardless of file size
+
+For complete technical details, see [LIMITATIONS.md](./LIMITATIONS.md)
 
 ## Installation
 
@@ -256,45 +349,6 @@ const redacted = jsonToTonl(users, 'users', {
 // Output: [REDACTED], [REDACTED]
 ```
 
-## Performance Benchmarks
-
-### Token Savings
-
-| Dataset Size | JSON Tokens | TONL Tokens | Savings |
-|--------------|-------------|-------------|---------|
-| 5 records    | 118         | 75          | 36.4%   |
-| 10 records   | 247         | 134         | 45.7%   |
-| 100 records  | 2,470       | 987         | 60.0%   |
-| 1000 records | 24,700      | 9,870       | 60.0%   |
-
-### Streaming Throughput
-
-- **Line processing**: 250,000 lines/second
-- **Memory usage**: Constant (independent of file size)
-- **Compression ratio**: 47% average
-- **Concurrent streams**: 10+ supported
-
-### Real-World Impact
-
-**Enterprise RAG Platform**
-
-```
-Before (JSON):
-- 1M queries/day × 1000 results per query
-- 500KB JSON per response
-- 125,000 tokens per query
-- $3.75 per query (GPT-4 pricing)
-- Daily cost: $3,750,000
-
-After (TONL):
-- Same query volume and result count
-- 200KB TONL per response
-- 50,000 tokens per query
-- $1.50 per query
-- Daily cost: $1,500,000
-- Monthly savings: $67,500,000
-```
-
 ## Architecture
 
 ### Components
@@ -303,7 +357,7 @@ After (TONL):
 - Type detection and optimization
 - Schema inference
 - Bidirectional conversion engine
-- Token counting
+- Token counting with js-tiktoken
 
 **Streaming Pipeline**
 - NDJSON parser with error recovery
@@ -330,6 +384,7 @@ After (TONL):
 - **HTTP Framework**: Express 5
 - **Security**: Helmet, Express Rate Limit
 - **Metrics**: prom-client
+- **Tokenizer**: js-tiktoken (GPT-4o tokenizer)
 - **Protocols**: MCP, SSE, HTTP
 
 ## Production Deployment
@@ -400,7 +455,7 @@ Comprehensive documentation available at [tonl-mcp-bridge-docs.vercel.app](https
 - [Commands Reference](https://tonl-mcp-bridge-docs.vercel.app/guide/commands)
 - [Streaming](https://tonl-mcp-bridge-docs.vercel.app/guide/streaming)
 - [Privacy & Compliance](https://tonl-mcp-bridge-docs.vercel.app/guide/privacy)
-- [Live Monitoring](https://tonl-mcp-bridge-docs.vercel.app/guide/live-monitoring)
+- [Live Monitoring](https://tonl-mcp-bridge-docs.vercel.app/guide/monitoring)
 - [MCP Server](https://tonl-mcp-bridge-docs.vercel.app/guide/mcp-server)
 - [Vector Databases](https://tonl-mcp-bridge-docs.vercel.app/guide/milvus)
 
@@ -474,5 +529,7 @@ MIT License - see [LICENSE](./LICENSE) for details
 - **Issues**: https://github.com/kryptomrx/tonl-mcp-bridge/issues
 
 ---
+
+*Pricing information verified December 11, 2025. Token calculations based on GPT-4o tokenizer (js-tiktoken). Benchmark data from [benchmarks/README.md](./benchmarks/README.md).*
 
 Built by developers tired of paying for JSON's verbosity. If this saved your organization money, consider starring the project on GitHub.
